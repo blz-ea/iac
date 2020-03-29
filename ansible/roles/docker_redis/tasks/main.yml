@@ -1,0 +1,29 @@
+---
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0775
+  with_items:
+    - "{{ data_folder }}/{{ container_name }}"
+    - "{{ data_folder }}/{{ container_name }}/data"
+  tags:
+    - redis
+
+- name: Create and start container
+  docker_container:
+    name: "{{ container_name }}"
+    recreate: "{{ recreate }}"
+    image: "{{ image }}"
+    command: ["redis-server", "--appendonly", "yes"]
+    hostname: "{{ hostname }}"
+    published_ports: "{{ published_ports }}"
+    volumes:
+      - "{{ data_folder }}/{{ container_name }}/data:/data"
+    restart_policy: unless-stopped
+    networks_cli_compatible: yes
+    state: "{{ state }}"
+    networks: "{{ networks }}"
+  tags:
+    - redis

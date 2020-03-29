@@ -1,0 +1,57 @@
+---
+- hosts: all
+  vars_files:
+    - vars/default.yml
+    - vars/main.yml
+  gather_facts: falses
+  tasks:
+    - name: Pre-flight check
+      include_role:
+        name: pre_flight_check
+      tags:
+        - preflight
+        - check
+
+    - name: Install Docker
+      include_role:
+        name: docker
+        apply:
+          tags:
+            always
+      tags:
+        - docker
+        - install
+
+    - name: Create docker networks
+      include_role:
+        name: docker_create_networks
+      vars:
+        networks:
+          - network
+      tags:
+        - docker
+        - containers
+        - networks
+
+    - name: Create MongoDB container
+      include_role:
+        name: docker_mongodb
+      tags:
+        - docker
+        - containers
+
+    - name: Create Redis container
+      include_role:
+        name: docker_redis
+      tags:
+        - docker
+        - containers
+
+    - name: Create Nginx container
+      include_role:
+        name: docker_nginx
+      vars:
+        certbot_email: "{{ user_email }}"
+      tags:
+        - docker
+        - containers

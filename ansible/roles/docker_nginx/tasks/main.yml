@@ -1,0 +1,75 @@
+---
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0775
+  with_items:
+    - "{{ data_folder }}/{{ container_name }}/etc/nginx/certs"
+    - "{{ data_folder }}/{{ container_name }}/etc/nginx/vhost.d"
+    - "{{ data_folder }}/{{ container_name }}/usr/share/nginx/html"
+  tags:
+    - nginx
+
+# - name: Copy Nginx configuration
+#   become: yes
+#   template:
+#     src: "etc/nginx/nginx.conf.j2"
+#     dest: "{{ data_folder}}/{{ container_name }}/etc/nginx.conf"
+#     owner: "root"
+#     group: "root"
+#     mode: 0644
+#   when: (role_path + '/templates/etc/nginx/nginx.conf.j2') is file
+#   tags:
+#     - nginx
+
+# - name: Set virtual hosts
+#   become: yes
+#   template:
+#     src: "etc/nginx/conf.d/vhost.conf.j2"
+#     dest: "{{ data_folder}}/{{ container_name }}/etc/conf.d/vhost.conf"
+#     owner: "root"
+#     group: "root"
+#     mode: 0644
+#   tags:
+#     - nginx
+  
+- name: Create and start nginx container
+  docker_container:
+    name: "{{ container_name }}"
+    hostname: "{{ hostname }}"
+    image: "{{ image }}"
+    recreate: "{{ recreate }}"
+    published_ports: "{{ published_ports }}"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - "{{ data_folder }}/{{ container_name }}/etc/nginx/certs:/etc/nginx/certs"
+      - "{{ data_folder }}/{{ container_name }}/etc/nginx/vhost.d:/etc/nginx/vhost.d"
+      - "{{ data_folder }}/{{ container_name }}/usr/share/nginx/html:/usr/share/nginx/html"
+    restart_policy: unless-stopped
+    state: "{{ state }}"
+    networks_cli_compatible: yes
+    networks: "{{ networks }}"
+  tags:
+    - nginx
+
+- name: Create letsencrypt container
+  docker_container:
+    name: "{{ container_name }}_letsencrypt"
+    image: "jrcs/letsencrypt-nginx-proxy-companion"
+    recreate: "{{ recreate }}"
+    env:
+      DEFAULT_EMAIL: "{{ certbot_email }}"
+      NGINX_PROXY_CONTAINER: "{{ container_name }}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - "{{ data_folder }}/{{ container_name }}/etc/nginx/certs:/etc/nginx/certs"
+      - "{{ data_folder }}/{{ container_name }}/etc/nginx/vhost.d:/etc/nginx/vhost.d"
+      - "{{ data_folder }}/{{ container_name }}/usr/share/nginx/html:/usr/share/nginx/html"
+    restart_policy: unless-stopped
+    state: "{{ state }}"
+    networks_cli_compatible: yes
+    networks: "{{ networks }}"
+  tags:
+    - nginx
