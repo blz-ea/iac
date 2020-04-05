@@ -7,6 +7,10 @@
 - Golang > 1.14
 - Ansible > 2.9.6
 
+### Plugins ##
+
+- [Terraform Proxmox Plugin](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/installation.md)
+
 ## WSL ##
 
 **Note on using in WSL**
