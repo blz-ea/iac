@@ -1,0 +1,142 @@
+---
+- hosts: ax7
+  gather_facts: no
+  pre_tasks:
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:
+    - name: Pre-flight check
+      include_role:
+        name: pre_flight_check
+      tags:
+        - preflight
+        - check
+
+    - name: UFW
+      include_role:
+        name: ufw
+      vars:
+        state: "{{ ax7.ufw.state }}"
+        rules: "{{ ax7.ufw.rules }}"
+      tags:
+        - ufw
+
+    - name: SSH
+      vars:
+        access_port: "{{ ax7.ssh.access_port }}"
+        root_acc_access: "{{ ax7.ssh.root_acc_access }}"
+        password_auth: "{{ ax7.ssh.password_auth }}"
+      include_role:
+        name: ssh
+      tags:
+        - ssh
+    
+    - name: Tmux
+      include_role:
+        name: tmux
+      vars:
+        username: "{{ ax7.users.deploy.username }}"
+      tags:
+        - tmux
+
+    - name: Install Node Exporter service
+      vars:
+        state: absent
+      include_role:
+        name: node_exporter
+      tags:
+        - node_exporter
+    
+    - name: Install Mosh
+      include_role:
+        name: mosh
+      tags:
+        - mosh
+
+    - name: Add user
+      include_role:
+        name: user
+      vars:
+        username: "{{ ax7.users.deploy.username }}"
+        password: "{{ ax7.users.deploy.password }}"
+        passwordless_sudo: "{{ ax7.users.deploy.passwordless_sudo }}"
+        user_groups: "{{ ax7.users.deploy.user_groups }}"
+        authorized_keys: "{{ ax7.users.deploy.authorized_keys }}"
+      tags:
+        - user
+
+    - name: Setup Oh My ZSH
+      include_role:
+        name: oh_my_zsh
+      vars:
+        username: "{{ ax7.users.deploy.username }}"
+      tags:
+        - oh_my_zsh
+
+    - name: Install Docker
+      include_role:
+        name: docker
+        apply:
+          tags:
+            always
+      tags:
+        - docker
+        - install
+
+    - name: Create docker networks
+      vars:
+        networks:
+          - network
+      include_role:
+        name: docker_create_networks    
+      tags:
+        - docker
+        - container
+        - networks
+
+    - name: Create MongoDB container
+      include_role:
+        name: docker_mongodb
+      tags:
+        - docker
+        - container
+        - mongodb
+
+    - name: Create Redis container
+      include_role:
+        name: docker_redis
+      tags:
+        - docker
+        - container
+        - redis
+    
+    - name: Create Code Server IDE container
+      vars:
+        virtual_host: "{{ ax7.code_server.virtual_host }}"
+        letsencrypt_host: "{{ ax7.code_server.letsencrypt_host }}"
+        password: "{{ ax7.code_server.password }}"
+        sudo_password: "{{ ax7.code_server.sudo_password }}"
+        recreate: no
+      include_role:
+        name: docker_code_server
+      tags:
+        - docker
+        - container
+        - code_server
+
+    - name: Create Nginx container
+      vars:
+        certbot: true
+        certbot_email: "{{ user.email }}"
+      include_role:
+        name: docker_nginx
+      tags:
+        - docker
+        - container
+        - nginx
+
