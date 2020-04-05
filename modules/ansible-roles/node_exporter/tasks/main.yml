@@ -1,0 +1,139 @@
+---
+- set_fact:
+    arch: amd64
+  when: ansible_architecture == 'x86_64'
+  tags:
+    - node_exporter
+
+- set_fact:
+    arch: 386
+  when: ansible_architecture == 'i386'
+  tags:
+    - node_exporter
+
+- name: Get node_exporter latest release information
+  uri:
+    url: https://api.github.com/repos/prometheus/node_exporter/releases/latest
+    method: GET
+    body_format: json
+    status_code: 200
+    return_content: true
+  register: node_exporter_json_response
+  when: state == "present"
+  tags:
+    - node_exporter
+
+- name: Clear node_exporter folder
+  become: yes
+  file: path={{ installation_path }}/node_exporter state=absent
+  tags:
+    - node_exporter
+
+- name: Create node_exporter directory in {{ installation_path }}
+  become: yes
+  file:
+    path: "{{ installation_path }}/node_exporter"
+    state: directory
+  tags:
+    - node_exporter
+
+- name: Extract latest release
+  become: yes
+  unarchive:
+    src: https://github.com/prometheus/node_exporter/releases/download/{{ node_exporter_json_response.json.tag_name }}/node_exporter-{{ node_exporter_json_response.json.tag_name[1:] }}.linux-{{ arch }}.tar.gz
+    dest: "{{ installation_path }}/node_exporter"
+    remote_src: yes
+  when: state == "present"
+  tags:
+    - node_exporter
+
+- name: Rename node_exporter folder
+  become: yes
+  command: mv "{{ installation_path }}/node_exporter/node_exporter-{{ node_exporter_json_response.json.tag_name[1:] }}.linux-{{ arch }}/" "{{ installation_path }}/node_exporter/latest"
+  when: state == "present"
+  tags:
+    - node_exporter
+
+- name: Link node_exporter executable to /usr/bin
+  become: yes
+  file:
+    src: "{{ installation_path }}/node_exporter/latest/node_exporter"
+    dest: /usr/bin/node_exporter
+    state: link
+  when: state == "present" 
+  tags:
+    - node_exporter
+
+- name: Copy node_exporter systemd file
+  become: yes
+  copy:
+    content: |
+              [Unit]
+              Description=Node_Exporter Service
+              After=network.target
+
+              [Service]
+              Type=simple
+              User=nobody
+              Restart=on-failure
+              RestartSec=5s
+              ExecStart=/usr/bin/node_exporter --web.listen-address=:{{ listen_address }}
+
+              [Install]
+              WantedBy=multi-user.target
+    dest: /etc/systemd/system/node_exporter.service
+  when: state == "present"   
+  tags:
+    - node_exporter
+
+- name: Make sure node_exporter.service is stopped
+  become: yes
+  systemd:
+    name: node_exporter
+    state: stopped
+  when: state == "absent"
+  tags:
+    - node_exporter
+
+- name: Remove node_exporter bin file
+  become: yes
+  file:
+    path: /usr/bin/node_exporter
+    state: absent
+  when: state == "absent"
+  tags:
+    - node_exporter
+
+- name: Remove node_exporter.service file
+  become: yes
+  file:
+    path: /etc/systemd/system/node_exporter.service
+    state: absent
+  when: state == "absent"
+  tags:
+    - node_exporter
+
+- name: Reload systemd
+  become: yes
+  systemd:
+    daemon_reload: yes
+  tags:
+    - node_exporter
+
+- name: Make sure node_exporter.service is enabled
+  become: yes
+  systemd:
+    name: node_exporter
+    enabled: yes
+  when: state == "present"
+  tags:
+    - node_exporter
+
+- name: Make sure node_exporter.service is running
+  become: yes
+  systemd:
+    name: node_exporter
+    state: restarted
+  when: state == "present"
+  tags:
+    - node_exporter

@@ -1,0 +1,12 @@
+---
+image: mongo
+container_name: mongodb
+hostname: mongodb
+init_db: omit
+recreate: yes
+root_username: omit
+root_password: omit
+published_ports: [ 27017:27017 ]
+data_folder: /opt/docker-data
+networks: []
+state: started

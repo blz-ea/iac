@@ -1,0 +1,82 @@
+---
+- name: Root Account SSH access
+  become: yes
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin {{ root_acc_access | ternary('yes', 'no', 'no') }}"
+    state: present
+  tags:
+    - ssh
+
+- name: Password authentication
+  become: yes
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication {{ password_auth | ternary('yes', 'no', 'no') }}"
+    state: present
+  tags:
+    - ssh
+
+- name: Setup alternate SSH port
+  become: yes
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "^Port"
+    line: "Port {{ access_port }}"
+  tags:
+    - ssh
+
+# After port has been changed load and override existing variable and wait for some time
+# If ports are the same than do not restart a service or make any changes
+
+- name: Save SSH Port
+  local_action: lineinfile regexp="^ansible_port:" state=present create=yes line="{{ item  }}" path="./.ansible.state/{{ ansible_hostname }}/{{ workspace }}/vars.yml"
+  with_items:
+    - 'ansible_port: {{ access_port }}'
+  tags:
+    - ssh
+
+- name: Add firewall rule
+  become: yes
+  ufw:
+    { rule: allow, port: "{{ access_port }}", proto: tcp }
+  when: firewall_rules == True
+  tags:
+    - ssh
+
+- name: Set old SSH port variable
+  set_fact:
+    old_ansible_port: "{{ ansible_port | d('22') }}"
+  tags:
+    - ssh
+
+- name: Restart SSH
+  become: yes
+  systemd:
+    name: sshd
+    daemon_reload: yes
+    state: restarted
+  tags:
+    - ssh
+
+- name: Set SSH port variable
+  set_fact:
+    ansible_port: "{{ access_port }}"
+  tags:
+    - ssh
+
+- name: Wait for system to become reachable
+  wait_for_connection:
+    timeout: 600
+  tags:
+    - ssh
+
+- name: Remove firewall rule
+  become: yes
+  ufw:
+    { rule: allow, port: "{{ old_ansible_port }}", proto: tcp, delete: yes }
+  when: firewall_rules == True and access_port != old_ansible_port
+  tags:
+    - ssh  

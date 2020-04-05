@@ -1,0 +1,8 @@
+policy:
+    - { direction: 'incoming', policy: 'deny' }
+    - { direction: 'outgoing', policy: 'allow' }
+logging: "on"
+state: enabled
+
+rules:
+  - { rule: 'allow', port: '{{ ssh_port | default("22") }}', proto: 'tcp' }

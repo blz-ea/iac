@@ -1,0 +1,124 @@
+---
+- name: Install tmux
+  become: yes
+  apt:
+    pkg: ['tmux', 'xclip']
+    state: latest
+  tags: 
+    - tmux
+
+- name: Cloning gpakosz/.tmux.git
+  git:
+    repo=https://github.com/gpakosz/.tmux.git
+    dest=/home/{{ username }}/.tmux
+    force=yes
+  tags: 
+    - tmux
+
+- name: Link .tmux.conf
+  file:
+    src: "/home/{{ username }}/.tmux/.tmux.conf"
+    dest: "/home/{{ username }}/.tmux.conf"
+    state: link
+  tags: 
+    - tmux
+
+- name: Copy .tmux.conf.local
+  copy:
+    src: .tmux.conf.local
+    dest: /home/{{ username }}/.tmux.conf.local
+  tags: 
+    - tmux
+
+# - name: Set /home/{{ username }}/.zshrc
+#   copy:
+#     content: |
+#               export ZSH=/home/{{ username }}/.oh-my-zsh
+#               ZSH_THEME="agnoster"
+
+#               plugins=(
+#                 git
+#                 zsh-syntax-highlighting
+#                 zsh-autosuggestions
+#               )
+
+#               source $ZSH/oh-my-zsh.sh
+#               export HISTSIZE=100000
+#               export HISTFILESIZE=100000
+
+#               setopt inc_append_history
+#               setopt share_history
+#               setopt HIST_FIND_NO_DUPS
+
+#               # Powerline configuration
+#               if [ -f /usr/share/powerline/bindings/bash/powerline.sh ]; then
+#                 powerline-daemon -q
+#                 POWERLINE_BASH_CONTINUATION=1
+#                 POWERLINE_BASH_SELECT=1
+#                 source /usr/share/powerline/bindings/bash/powerline.sh
+#               fi
+
+#               # Highlight the current autocomplete option
+#               zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+#               # Better SSH/Rsync/SCP Autocomplete
+#               zstyle ':completion:*:(scp|rsync):*' tag-order ' hosts:-ipaddr:ip\ address hosts:-host:host files'
+#               zstyle ':completion:*:(ssh|scp|rsync):*:hosts-host' ignored-patterns '*(.|:)*' loopback ip6-loopback localhost ip6-localhost broadcasthost
+#               zstyle ':completion:*:(ssh|scp|rsync):*:hosts-ipaddr' ignored-patterns '^(<->.<->.<->.<->|(|::)([[:xdigit:].]##:(#c,2))##(|%*))' '127.0.0.<->' '255.255.255.255' '::1' 'fe80::*'
+
+#               # Allow for autocomplete to be case insensitive
+#               zstyle ':completion:*' matcher-list '' 'm:{[:lower:][:upper:]}={[:upper:][:lower:]}' \
+#                 '+l:|?=** r:|?=**'
+
+#               # Initialize the autocompletion
+#               autoload -Uz compinit && compinit -i
+
+#     dest: /home/{{username}}/.zshrc
+#   tags: 
+#     - oh_my_zsh
+
+# - name: Updating ~/.zshrc - setopt HIST_FIND_NO_DUPS
+#   lineinfile:
+#     dest: /home/{{username}}/.zshrc
+#     line: 'setopt HIST_FIND_NO_DUPS'
+#   tags: 
+#     - oh_my_zsh
+
+# - name: Update .zshrc - Add zsh-autosuggestions custom plugin
+#   lineinfile:
+#     dest: /home/{{username}}/.zshrc
+#     line: 'source /home/{{username}}/.oh-my-zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh'
+#   tags: 
+#     - oh_my_zsh
+
+# - name: Update .zshrc - Add zsh-syntax-highlighting custom plugin
+#   lineinfile:
+#     dest: /home/{{username}}/.zshrc
+#     line: 'source /home/{{username}}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh'
+#   tags: 
+#     - oh_my_zsh
+
+# - name: Updating .zshrc - setopt inc_append_history
+#   lineinfile:
+#     dest: /home/{{username}}/.zshrc
+#     line: 'setopt inc_append_history'
+#   tags: 
+#     - oh_my_zsh
+
+# - name: Change deployment user shell
+#   become: yes
+#   user: 
+#     name: '{{ username }}' 
+#     shell: '/usr/bin/zsh'
+#   tags: 
+#     - oh_my_zsh
+
+# - name: Set permissions to .oh-my-zsh
+#   file:
+#     path: /home/{{username}}/.oh-my-zsh/
+#     owner: "{{ username }}"
+#     group: "{{ username }}"
+#     mode: 'g-w,o-w'
+#     recurse: true
+#   tags: 
+#     - oh_my_zsh

@@ -1,0 +1,11 @@
+---
+username: omit
+password: omit
+user_groups: omit
+shell: /bin/bash
+generate_ssh_key: yes
+
+authorized_keys: []
+sudoers: yes
+passwordless_sudo: yes
+remove: no

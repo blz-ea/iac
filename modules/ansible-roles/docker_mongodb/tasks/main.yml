@@ -1,0 +1,39 @@
+---
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0775
+  with_items:
+    - "{{ data_folder }}/{{ container_name }}"
+    - "{{ data_folder }}/{{ container_name }}/data"
+    - "{{ data_folder }}/{{ container_name }}/init"
+  tags:
+    - docker
+    - container
+    - mongodb
+
+
+- name: Create and start container
+  docker_container:
+    name: "{{ container_name }}"
+    image: "{{ image }}"
+    hostname: "{{ hostname }}"
+    recreate: "{{ recreate }}"
+    env:
+      MONGO_INITDB_DATABASE: "{{ init_db }}"
+      MONGO_INITDB_ROOT_USERNAME: "{{ root_username }}"
+      MONGO_INITDB_ROOT_PASSWORD: "{{ root_password }}"
+    published_ports: "{{ published_ports }}"
+    volumes:
+      - "{{ data_folder }}/{{ container_name }}/data:/data/db"
+      - "{{ data_folder }}/{{ container_name }}/init:/docker-entrypoint-initdb.d"
+    restart_policy: unless-stopped
+    networks_cli_compatible: yes
+    state: "{{ state }}"
+    networks: "{{ networks }}"
+  tags:
+    - docker
+    - container
+    - mongodb

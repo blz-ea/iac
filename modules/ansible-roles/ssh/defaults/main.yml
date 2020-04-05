@@ -1,0 +1,5 @@
+---
+root_acc_access: no
+password_auth: no
+access_port: 22
+firewall_rules: yes

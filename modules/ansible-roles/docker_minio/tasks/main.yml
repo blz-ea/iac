@@ -1,0 +1,32 @@
+---
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0775
+  with_items:
+    - "{{ data_folder }}/{{ container_name }}"
+    - "{{ data_folder }}/{{ container_name }}/data"
+
+- name: Create and start container
+  docker_container:
+    name: "{{ container_name }}"
+    image: "{{ image }}"
+    hostname: "{{ hostname }}"
+    recreate: "{{ recreate }}"
+    env:
+      MINIO_ACCESS_KEY: "{{ access_key }}"
+      MINIO_SECRET_KEY: "{{ secret_key }}"
+      LETSENCRYPT_HOST: "{{ letsencrypt_host }}"
+      VIRTUAL_HOST: "{{ virtual_host }}"
+
+    published_ports: "{{ published_ports }}"
+    command: "{{ command + ' ' + ( folders | map('regex_replace', '(.*)', '/mnt\\1') | list | join(' ') ) }}"
+    volumes: "{{ ( folders | map('regex_replace', '(.*)', '\\1:/mnt\\1') | list ) + [ data_folder + '/' + container_name + '/data:/data' ] }}"
+    restart_policy: unless-stopped
+    networks_cli_compatible: yes
+    state: "{{ state }}"
+    networks: "{{ networks }}"
+  tags:
+    - minio

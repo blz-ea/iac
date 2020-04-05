@@ -1,0 +1,15 @@
+---
+image: jwilder/nginx-proxy
+container_name: nginx
+certbot_container_name: certbot
+www_folder: www
+hostname: nginx
+recreate: yes
+depends_on: omit
+published_ports: [ 80:80, 443:443 ]
+data_folder: /opt/docker-data
+networks: []
+state: started
+
+certbot: false
+certbot_email: omit

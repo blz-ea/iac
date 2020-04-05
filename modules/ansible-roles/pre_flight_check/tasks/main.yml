@@ -1,0 +1,64 @@
+---
+- name: Install `python-minimal`
+  raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+  register: output
+  changed_when: output.stdout != ""
+  tags:
+    - preflight
+    - check
+
+- name: Install `python-setup-tools`
+  raw: test -e /usr/bin/pip || (apt -y update && apt install -y python-pip python-dev build-essential python-setuptools)
+  register: output
+  changed_when: output.stdout != ""
+  tags:
+    - preflight
+    - check
+
+- name: Update and upgrade apt packages
+  become: true
+  apt:
+    upgrade: yes
+    update_cache: yes
+    cache_valid_time: 86400 # One day
+  tags:
+    - preflight
+    - check
+
+- name: Install `pip` repositories
+  package:
+    name: ['epel-release','centos-release-scl']
+    state: latest
+  when: ansible_distribution == 'CentOS'
+  tags:
+    - preflight
+    - check
+
+- name: Install `pip`
+  package:
+    name: ['python-pip','rh-python36']
+    state: latest
+  when: ansible_distribution == 'CentOS'
+  tags:
+    - preflight
+    - check
+
+- name: Install `pip`
+  apt:
+    pkg: ['python3-pip']
+    state: latest
+  tags:
+    - preflight
+    - check
+
+- name: Installing python modules
+  become: true
+  pip:
+    name: 
+      - docker
+      - pip
+      - ansible
+      - docker-compose
+  tags:
+    - preflight
+    - check

@@ -1,0 +1,4 @@
+---
+installation_path: /usr/share
+listen_address: 9100
+state: present

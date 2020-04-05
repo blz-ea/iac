@@ -1,0 +1,44 @@
+---
+- name: Install Mosh package
+  become: yes
+  apt:
+    pkg: ['mosh']
+    state: latest
+  tags: 
+    - mosh
+
+- name: Configure ufw rules for Mosh
+  become: yes
+  ufw: 
+    rule={{ item.rule }} 
+    port={{ item.port }} 
+    proto={{ item.proto }}
+  with_items:
+  - { rule: 'allow', port: '60000:61000', proto: 'udp' }
+  tags:
+    - mosh
+    - fw
+
+# Mosh throws an error without below steps
+# perl: warning: Setting locale failed.
+# perl: warning: Please check that your locale settings:
+#    LANGUAGE = (unset),
+#    LC_ALL = (unset),
+#    LC_CTYPE = "es_VE.UTF-8",
+#    LANG = "es_ES.UTF-8"
+#    are supported and installed on your system.
+# https://github.com/mobile-shell/mosh/issues/224
+
+- name: Updating /etc/locale.gen
+  become: yes
+  lineinfile:
+    dest: /etc/locale.gen
+    line: 'en_US.UTF-8 UTF-8'
+  tags: 
+    - mosh
+
+- name: Ganerate locale
+  become: yes
+  command: bash locale-gen
+  tags: 
+    - mosh

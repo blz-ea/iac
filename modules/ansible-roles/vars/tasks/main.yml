@@ -1,0 +1,28 @@
+---
+- name: Include provided variables
+  include_vars:
+    file: "{{ role_path | dirname | dirname | dirname }}/vars/{{ file is defined | ternary(file, 'default.yml') }}"
+  tags:
+    - always
+
+- name: Include workspace related variables
+  set_fact:
+    custom_vars_file_path: "{{ playbook_dir  }}/.ansible.state/{{ inventory_hostname }}/{{ workspace }}/vars.yml"
+  tags:
+    - always
+
+- local_action: stat path="{{ custom_vars_file_path }}"
+  register: res
+  tags:
+    - always
+
+- include_vars:
+    file: "{{ custom_vars_file_path }}"
+  when: res.stat.exists == true
+  tags:
+    - always
+
+- setup:
+    gather_subset: "{{ gather_facts }}"
+  tags:
+    - always

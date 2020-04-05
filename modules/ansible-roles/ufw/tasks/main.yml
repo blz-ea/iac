@@ -1,0 +1,39 @@
+---
+- name: Install UFW
+  become: yes
+  package:
+    name: ufw
+    state: latest
+  tags:
+    - ufw
+    - install
+
+- name: Configure ufw defaults
+  become: yes
+  ufw: 
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  with_items: "{{ policy }}"
+  tags:
+    - ufw
+
+- name: Configure ufw rules
+  become: yes
+  ufw: "{{ item }}"
+  with_items: "{{ rules }}"
+  tags:
+    - ufw
+
+- name: Enable ufw logging
+  become: yes
+  ufw: 
+    logging: "{{ logging }}"
+  tags:
+    - ufw
+
+- name: Enable ufw
+  become: yes
+  ufw: 
+    state: "{{ state }}"
+  tags:
+    - ufw

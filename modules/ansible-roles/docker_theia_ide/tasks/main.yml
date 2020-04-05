@@ -1,0 +1,33 @@
+---
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0777
+  with_items:
+    - "{{ data_folder }}/{{ container_name }}"
+    - "{{ data_folder }}/{{ container_name }}/data"
+  tags:
+    - theiaide
+
+- name: Create and start container
+  docker_container:
+    name: "{{ container_name }}"
+    recreate: "{{ recreate }}"
+    image: "{{ image }}"
+    env:
+      username: "asd"
+      password: "fcea920f7412b5da7be0cf42b8c93759"
+      LETSENCRYPT_HOST: "{{ letsencrypt_host }}"
+      VIRTUAL_HOST: "{{ virtual_host }}"
+    hostname: "{{ hostname }}"
+    published_ports: "{{ published_ports }}"
+    volumes:
+      - "{{ data_folder }}/{{ container_name }}/data:/home/project:cached"
+    restart_policy: unless-stopped
+    networks_cli_compatible: yes
+    state: "{{ state }}"
+    networks: "{{ networks }}"
+  tags:
+    - theiaide
