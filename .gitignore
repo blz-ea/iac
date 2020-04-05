@@ -2,15 +2,12 @@
 *.iml
 *.ipr
 *.iws
-ansible/vars/*
-!ansible/vars/default.yml
-ansible/inventory/*
-!ansible/inventory/lab
-ansible/group_vars/*
-ansible/keys/*
-ansible/secrets/*
+keys/*
 *.un~
 *.swp
+
+vars/*
+!vars/default.yml
 
 # Local .terraform directories
 **/.terraform/*

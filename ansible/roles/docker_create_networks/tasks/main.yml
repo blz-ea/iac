@@ -1,7 +1,0 @@
----
-- name: Create docker networks
-  docker_network:
-    name: "{{ item }}"
-  with_items: "{{ networks }}"
-  tags:
-    - always

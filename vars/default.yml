@@ -1,0 +1,50 @@
+---
+# Default Configuration
+## example of using Hashicorp Vault to for secrets retrieval: lookup('hashi_vault', 'secret=secret/hello token=<some-token> url=http://myvault:8200 namespace=teama/admins')
+## User
+workspace: default
+user: {
+  name: deploy,
+  email: "{{ lookup('env','USER_EMAIL') | d(omit) }}"
+}
+
+## Proxmox VE
+proxmox: {
+  auth: {
+    tls_insecure: true,
+    api_url: "https://proxmox_host:8006/api2/json",
+    username: "root@pam",
+    password: "secret_password",
+    otp: "",
+  }
+}
+
+
+ufw: {
+  state: enabled,
+  rules: [
+    { rule: allow, port: '{{ ssh_port | default("22") }}', proto: tcp },
+    { rule: allow, port: '80', proto: tcp },
+    { rule: allow, port: '443', proto: tcp },
+  ]
+}
+
+## Docker (https://github.com/nickjj/ansible-docker)
+docker__state: present
+docker__edition: ce
+docker__channel: ['stable']
+docker__version: '19.03.5'
+docker__compose_version: '1.25.4'
+docker__pip_docker_state: present
+docker__pip_docker_compose_state: 'present'
+docker__users: ["{{ lookup('env','SUDO_USER') | d('root') }}", "{{ user__name }}"] # Try to use the sudo user by default, but fall back to root.
+docker__registries: [
+  {
+    registry_url: omit,
+    username: omit,
+    password: omit,
+    email: omit,
+    reauthorize: yes,
+    state: present
+  }
+]
