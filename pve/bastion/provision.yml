@@ -1,0 +1,115 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  pre_tasks:
+    - name: Wait for target to become reachable
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:    
+    - name: Pre-flight check
+      include_role:
+        name: pre_flight_check
+      tags:
+        - preflight
+        - check
+    
+    - name: Add user
+      include_role:
+        name: user
+      vars:
+        username: "{{ default_user.name }}"
+        password: "{{ default_user.password }}"
+        passwordless_sudo: "{{ default_user.passwordless_sudo }}"
+        user_groups: "{{ default_user.user_groups }}"
+        authorized_keys: "{{ default_user.authorized_keys }}"
+      tags:
+        - user
+
+    - name: SSH
+      vars:
+        access_port: "{{ bastion.ssh.access_port }}"
+        root_acc_access: "{{ bastion.ssh.root_acc_access }}"
+        password_auth: "{{ bastion.ssh.password_auth }}"
+        set_ssh_ansible_user: "{{ default_user.name }}"
+      include_role:
+        name: ssh
+      tags:
+        - ssh
+    
+    - name: Tmux
+      include_role:
+        name: tmux
+      vars:
+        username: "{{ default_user.name }}"
+      tags:
+        - tmux
+
+    - name: Install Node Exporter service
+      include_role:
+        name: node_exporter
+      tags:
+        - node_exporter
+
+    - name: Install Go Lang
+      include_role:
+        name: golang
+      tags:
+        - golang
+
+    - name: UFW
+      include_role:
+        name: ufw
+      vars:
+        state: "{{ bastion.ufw.state }}"
+        rules: "{{ bastion.ufw.rules }}"
+      tags:
+        - ufw
+
+    - name: Install Terraform
+      include_role:
+        name: terraform
+      tags:
+        - terraform
+    
+    - name: Install Mosh
+      include_role:
+        name: mosh
+      tags:
+        - mosh
+    
+    - name: Python3
+      include_role:
+        name: python3
+      tags:
+        - python3
+
+    - name: Setup Oh My ZSH
+      include_role:
+        name: oh_my_zsh
+      vars:
+        username: "{{ default_user.name }}"
+      tags:
+        - oh_my_zsh
+
+    - name: Install Docker
+      include_role:
+        name: docker
+        apply:
+          become: yes
+          tags:
+            always
+      vars:
+        docker__users: ["{{ default_user.name }}"]
+      tags:
+        - docker
+        - install
