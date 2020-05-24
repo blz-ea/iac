@@ -1,0 +1,192 @@
+#
+# Bootstrap Proxmox Virtual Environment Node
+#
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  pre_tasks:
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:
+    - name: Delete Proxmox Enterprise Repository from sources
+      file:
+        path: /etc/apt/sources.list.d/pve-enterprise.list
+        state: absent
+      tags: 
+        - proxmox
+        - sources
+        - subscription
+
+    - name: Add Debian Sources Repository
+      lineinfile:
+        line: "{{ item }}"
+        create: true
+        dest: /etc/apt/sources.list.d/sources.list
+      with_items:
+        - deb http://ftp.debian.org/debian buster main contrib
+        - deb http://ftp.debian.org/debian buster-updates main contrib
+        - deb http://download.proxmox.com/debian/pve buster pve-no-subscription
+      tags: 
+        - proxmox
+        - sources
+
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: "yes"
+        update_cache: "yes"
+        cache_valid_time: 86400 # One day
+      tags: 
+        - proxmox
+        - upgrade
+
+    - name: Check if Intel processor
+      command: grep Intel /proc/cpuinfo
+      ignore_errors: true
+      register: is_intel
+      tags:
+        - proxmox
+        - vfio
+        - grub
+           
+    - name: Check if AMD processor
+      command: grep AMD /proc/cpuinfo
+      ignore_errors: true
+      register: is_amd 
+      tags:
+        - proxmox
+        - vfio
+        - grub
+
+    - set_fact:
+        cpu_brand: intel
+      when: is_intel.failed == False
+      tags: 
+        - proxmox
+        - vfio
+        - grub
+
+    - set_fact:
+        cpu_brand: amd
+      when: is_amd.failed == False
+      tags: 
+        - proxmox
+        - vfio
+        - grub
+
+    # VFIO
+    # Enable IOMMU
+    - set_fact:
+        # For AMD CPUs: amd_iommu=on
+        iommu: "{{ cpu_brand }}_iommu=on iommu=pt"
+      tags: 
+        - proxmox
+        - vfio
+        - grub
+
+    # https://passthroughpo.st/explaining-csm-efifboff-setting-boot-gpu-manually/
+    # - set_fact:
+    #     frame_buffer: video=vesafb:off,efifb:off
+    #   tags: 
+    #     - proxmox
+    #     - vfio
+    #     - grub
+
+    # http://vfio.blogspot.com/2014/08/vfiovga-faq.html
+    - set_fact:
+        acs_override: pcie_acs_override=downstream,multifunction
+      tags: 
+        - proxmox
+        - vfio
+        - grub
+
+    - name: Configure Grub for VFIO
+      lineinfile:
+        dest: /etc/default/grub
+        regexp: "^GRUB_CMDLINE_LINUX_DEFAULT"
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet {{ iommu }} {{ acs_override }} nofb nomodeset"'
+        state: present
+      tags: 
+        - proxmox
+        - vfio
+        - grub
+
+    - name: Update Grub
+      command: bash update-grub
+      tags: 
+        - proxmox
+        - vfio
+        - grub
+
+    - name: Add Kernel Modules
+      lineinfile:
+        dest: /etc/modules
+        line: "{{ item }}"
+      with_items:
+        - vfio
+        - vfio_iommu_type1
+        - vfio_pci
+        - vfio_virqfd
+      tags: 
+        - proxmox
+        - vfio
+        - modules
+
+    - name: Kernel configuration
+      copy:
+        content: |
+                # IOMMU interrupt remapping
+                options vfio_iommu_type1 allow_unsafe_interrupts=1
+                options kvm ignore_msrs=1
+
+                # Blacklist drivers for PCI passthrough
+                blacklist radeon
+                blacklist nouveau
+                blacklist nvidia
+                
+                # Add GPU to vfio-pci driver
+                ## Get Vendor IDs for GPU and Audio Bus
+                ## lspci -v # > 01:00.0 VGA controller 01:00.1 Audio Device
+                ## lspci -ns 01:00 # > 1234:1234, 1234:1234
+                options vfio-pci ids={{ proxmox.nodes.pve.vfio_pci.ids | join(",") }}
+        dest: /etc/modprobe.d/vfio.conf
+      tags:
+        - proxmox
+        - vfio
+        - modules
+
+    - name: Update initramfs
+      command: bash update-initramfs -u
+      tags: 
+        - proxmox
+        - vfio
+        - modules
+
+    - name: Remove Subscription Popup
+      include_role:
+        name: proxmox_subscription_popup
+        apply:
+          tags:
+            - always
+      tags:
+        - popup
+
+    - name: Install Intel Graphics driver
+      package:
+        name: 
+          - i965-va-driver
+          - vainfo
+      tags:
+        - intel-graphics
+        
+    - name: Reboot
+      reboot:
+      tags:
+        - never
+        - reboot
