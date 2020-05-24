@@ -1,3 +1,0 @@
-inventory/*
-!inventory/lab
-.ansible.state

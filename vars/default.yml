@@ -1,6 +1,6 @@
 ---
 # Default Configuration
-## example of using Hashicorp Vault to for secrets retrieval: lookup('hashi_vault', 'secret=secret/hello token=<some-token> url=http://myvault:8200 namespace=teama/admins')
+## example of using Hashicorp Vault to for secrets retrieval in Terraform: lookup('hashi_vault', 'secret=secret/hello token=<some-token> url=http://myvault:8200 namespace=teama/admins')
 ## User
 workspace: default
 user: {
