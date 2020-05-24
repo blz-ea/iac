@@ -1,0 +1,19 @@
+[Unit]
+Description="HashiCorp Consul - A service mesh solution"
+Documentation=https://www.consul.io/
+Requires=network-online.target
+After=network-online.target
+AssertFileIsExecutable={{ installation_path }}/consul
+AssertPathExists={{ installation_path }}
+
+[Service]
+Type=notify
+ExecStart={{ installation_path }}/consul agent -config-dir=/etc/consul/config.d/ -bind {% raw %}'{{ GetInterfaceIP "eth0" }}' {% endraw %}
+
+ExecReload={{ installation_path }}/consul reload
+KillMode=process
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

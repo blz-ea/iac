@@ -1,0 +1,68 @@
+---
+- name: Install additional packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python3-pip
+    - libudev-dev
+
+- name: Link /usr/bin/pip3 to /usr/bin/pip
+  become: yes
+  file:
+    src: "/usr/bin/pip3"
+    dest: /usr/bin/pip
+    state: link
+    force: yes
+
+- name: Installing python modules
+  pip:
+    name: 
+      - homeassistant
+      # - wheel
+      # - aiohttp
+      # - aiohttp_cors
+      # - sqlalchemy
+      # - home-assistant-frontend
+      # - hass_nabucasa
+      # - distro
+      # - defusedxml
+      # - zeroconf
+      # - ssdp
+      # - updater
+      # - zeroconf
+      # - requests==2.23.0
+      # - netdisco
+      # - pychromecast
+      # - mutagen
+      # - gtts_token
+
+- name: Link executable to /usr/bin
+  become: yes
+  file:
+    src: "/usr/local/bin/hass"
+    dest: /usr/bin/hass
+    state: link
+
+- name: Create systemd file
+  become: yes
+  template:
+    src: templates/hass.service.j2
+    dest: /etc/systemd/system/hass.service
+
+- name: Reload systemd
+  become: yes
+  systemd:
+    daemon_reload: yes
+
+- name: Make sure hass.service is enabled
+  become: yes
+  systemd:
+    name: hass
+    enabled: yes
+
+- name: Restart hass.service
+  become: yes
+  systemd:
+    name: hass
+    state: restarted

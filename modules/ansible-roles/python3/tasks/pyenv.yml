@@ -1,0 +1,51 @@
+- name: Delete existing folder
+  file:
+    path: "{{ ansible_env.HOME }}/.pyenv/"
+    state: absent
+
+- name: Create temp directory
+  file:
+    path: "{{ tmp_dir }}"
+    state: directory
+
+- name: Download pyenv installer
+  get_url:
+    url: https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer
+    dest: "{{ tmp_dir }}"
+
+- name: Start installer
+  command: "bash pyenv-installer"
+  args:
+    chdir: "{{ tmp_dir }}"
+    creates: "{{ ansible_env.HOME }}/.pyenv"
+
+- stat:
+    path: "{{ ansible_env.HOME }}/{{ item }}"
+  register: rc_files
+  with_items: 
+    - .bashrc
+    - .zshrc
+
+- name: Update *rc files
+  blockinfile:
+    path: "{{ ansible_env.HOME }}/{{ item.item }}"
+    create: true
+    block: |
+      export PATH="{{ ansible_env.HOME }}/.pyenv/bin:$PATH"
+      eval "$(pyenv init -)"
+      eval "$(pyenv virtualenv-init -)"
+  when: item.stat | default(false) and item.stat.exists
+  with_items: "{{ rc_files.results }}"
+
+- name: Update pyenv
+  command: "{{ ansible_env.HOME }}/.pyenv/bin/pyenv update"
+
+- name: Install Python {{ pyenv_version }}
+  command: "{{ ansible_env.HOME }}/.pyenv/bin/pyenv install {{ pyenv_version }} --skip-existing"
+  args:
+    creates: "{{ ansible_env.HOME }}/.pyenv/versions/{{ pyenv_version }}"
+  when: pyenv_version != None
+
+- name: Set Python {{ pyenv_version }} as global
+  command: "{{ ansible_env.HOME }}/.pyenv/bin/pyenv global {{ pyenv_version }}"
+  when: pyenv_version != None and pyenv_global

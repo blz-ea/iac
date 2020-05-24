@@ -1,0 +1,9 @@
+AUTOINSTALL={{ plexupdate_autoinstall | ternary('yes','no') }}
+AUTOUPDATE={{ plexupdate_autoupdate | ternary('yes','no') }}
+AUTODELETE={{ plexupdate_autodelete | ternary('yes','no') }}
+PLEXSERVER={{ plexupdate_plexserver }}
+PLEXPORT={{ plexupdate_plexport }}
+PUBLIC={{ plexupdate_public | ternary('yes','no') }}
+{% if plexupdate_token %}TOKEN={{ plexupdate_token }}{% endif %}
+NOTIFY={{ plexupdate_notify | ternary('yes','no') }}
+DEBIAN_INSTALL="dpkg --force-confnew -i"

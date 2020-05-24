@@ -1,0 +1,110 @@
+---
+- name: Install additional packages
+  become: true
+  package:
+    name: 
+      - gnupg
+      - ca-certificates
+  tags:
+    - duplicati
+
+- name: Add an Apt signing key
+  apt_key:
+    id: 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+    keyserver: keyserver.ubuntu.com
+    state: present
+  tags:
+    - duplicati
+
+- name: Add mono repository
+  apt_repository:
+    repo: deb https://download.mono-project.com/repo/ubuntu stable-bionic main
+    state: present
+  tags:
+    - duplicati
+
+- name: Update and upgrade apt packages
+  become: true
+  apt:
+    update_cache: "yes"
+  tags:
+    - duplicati
+
+- name: Install mono packages
+  become: true
+  package:
+    name: 
+      - mono-devel
+      - gtk-sharp2
+      - libappindicator0.1-cil
+      - libappindicator1
+      - libdbusmenu-glib4
+      - libdbusmenu-gtk4
+      - libindicator7
+      - libmono-2.0-1
+  tags:
+    - duplicati
+
+- name: Get latest release information
+  uri:
+    url: "{{ git_repo_api }}/releases"
+    method: GET
+    body_format: json
+    status_code: 200
+    return_content: true
+  register: duplicati_response
+  tags:
+    - duplicati
+
+- set_fact:
+    download_url: "{{ item.browser_download_url }}"
+  with_items: "{{ duplicati_response.json.0.assets }}"
+  when:
+    - item.browser_download_url is regex(".deb$")
+  tags:
+    - install
+
+- name: Downloading file
+  get_url:
+    url: "{{ download_url }}"
+    dest: /tmp/duplicati.deb
+  register: downloaded_file
+  tags:
+    - install
+
+- name: Install Duplicati
+  apt:
+    deb: "{{ downloaded_file.dest }}"
+  tags:
+    - install
+
+- name: Configurate systemd service
+  lineinfile:
+    dest: /etc/default/duplicati
+    regexp: "^DAEMON_OPTS=" 
+    line: "DAEMON_OPTS='--webservice-interface=any --webservice-allowed-hostnames=* --webservice-port={{ listen_address }}'"
+  tags:
+    - install
+
+- name: Remove Installation package
+  file:
+    path: /tmp/duplicati.deb
+    state: absent
+  tags:
+    - install
+
+- name: Make sure duplicati.service is enabled
+  become: yes
+  systemd:
+    name: duplicati
+    enabled: yes
+  tags:
+    - install
+
+- name: Restart duplicati.service
+  become: yes
+  systemd:
+    name: duplicati
+    state: restarted
+  tags:
+    - install

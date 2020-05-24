@@ -1,0 +1,24 @@
+- setup:
+
+- set_fact:
+    distr: "{{ ansible_distribution|lower }}"
+
+- name: Install dependencies
+  include_tasks:
+    file: "{{ distr }}.yml"
+    apply:
+      tags:
+        - always
+  tags:
+    - python3
+
+- name: Install pyenv
+  include_tasks:
+    file: pyenv.yml
+    apply:
+      tags:
+        - always
+  when: pyenv == true
+  tags:
+    - python3
+    - pyenv

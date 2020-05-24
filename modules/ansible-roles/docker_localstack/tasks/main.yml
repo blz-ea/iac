@@ -1,0 +1,39 @@
+---
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0777
+  with_items:
+    - "{{ data_folder }}/{{ container_name }}/tmp"
+  tags:
+    - docker
+    - container
+    - localstack
+
+- name: Create and start container
+  docker_container:
+    name: "{{ container_name }}"
+    recreate: "{{ recreate }}"
+    image: "{{ image }}"
+    hostname: "{{ hostname }}"
+    privileged: yes
+    published_ports: "{{ published_ports }}"
+    env:
+      LOCALSTACK_HOSTNAME: "{{ LOCALSTACK_HOSTNAME }}"
+      DEFAULT_REGION: "{{ DEFAULT_REGION }}"
+      TEST_AWS_ACCOUNT_ID: "{{ TEST_AWS_ACCOUNT_ID }}"
+      DOCKER_HOST: "{{ DOCKER_HOST }}"
+      HOST_TMP_FOLDER: "{{ HOST_TMP_FOLDER }}"
+    volumes:
+      # - "{{ data_folder }}/{{ container_name }}/tmp/:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    restart_policy: unless-stopped
+    networks_cli_compatible: yes
+    state: "{{ state }}"
+    networks: "{{ networks }}"
+  tags:
+    - docker
+    - container
+    - localstack

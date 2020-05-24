@@ -14,6 +14,27 @@
     - container
     - mongodb
 
+- name: Create and start container
+  docker_container:
+    name: "{{ container_name }}"
+    image: "{{ image }}"
+    hostname: "{{ hostname }}"
+    recreate: "{{ recreate }}"
+    env:
+      MONGO_INITDB_DATABASE: "{{ init_db }}"
+    published_ports: "{{ published_ports }}"
+    volumes:
+      - "{{ data_folder }}/{{ container_name }}/data:/data/db"
+      - "{{ data_folder }}/{{ container_name }}/init:/docker-entrypoint-initdb.d"
+    restart_policy: unless-stopped
+    networks_cli_compatible: yes
+    state: "{{ state }}"
+    networks: "{{ networks }}"
+  when: not root_username or not root_password
+  tags:
+    - docker
+    - container
+    - mongodb
 
 - name: Create and start container
   docker_container:
@@ -33,6 +54,7 @@
     networks_cli_compatible: yes
     state: "{{ state }}"
     networks: "{{ networks }}"
+  when: root_username or root_password
   tags:
     - docker
     - container

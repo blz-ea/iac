@@ -1,0 +1,171 @@
+---
+- name: Install packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - openssl
+    - wget
+    - git
+
+- name: Clone plexupdate repository
+  git:
+    repo: https://github.com/mrworf/plexupdate.git
+    dest: "{{ plexupdate_install_location }}"
+    version: "{{ plexupdate_version }}"
+
+- name: Create desired config
+  template:
+    src: plexupdate.conf.j2
+    dest: "{{ plexupdate_config_location }}"
+
+- name: Install latest plex with plexupdate
+  command: "{{ plexupdate_install_location }}/plexupdate.sh --config {{ plexupdate_config_location }}"
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  changed_when: "'already installed' not in plexupdate_output.stdout"
+  register: plexupdate_output
+
+- name: Reload systemd daemon
+  systemd:
+    name: plexmediaserver
+    daemon_reload: true
+  when: (ansible_distribution == 'CentOS' and ansible_distribution_major_version == "7") or
+        (ansible_distribution == 'Ubuntu' and ansible_distribution_version|int >= 15.04) or
+        (ansible_distribution == 'Debian' and ansible_distribution_major_version|int >= 8)
+
+- name: Autostart Plex
+  service:
+    name: plexmediaserver
+    enabled: true
+
+- block:
+    - name: Install cron
+      package:
+        name: cronie
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Create cron config
+      template:
+        src: plexupdate.cron.conf.j2
+        dest: /etc/plexupdate.cron.conf
+
+    - name: Create cron job
+      file:
+        src: "{{ plexupdate_install_location }}/extras/cronwrapper"
+        dest: "/etc/cron.{{ plexupdate_interval }}/plexupdate"
+        state: link
+  when: ansible_os_family != 'Alpine'
+
+- block:
+    - name: Start and enable crond
+      service:
+        name: crond
+        state: started
+        enabled: true
+
+    - name: Create cron job
+      file:
+        src: "{{ plexupdate_install_location }}/extras/cronwrapper"
+        dest: "/etc/periodic/{{ plexupdate_interval }}"
+        state: link
+  when: ansible_os_family == 'Alpine'
+
+- name: Claim Plex Server
+  block:
+  - name: Get Plex Media Server claim code
+    uri:
+      url: https://plex.tv/api/claim/token.json
+      user: "{{ plex_username }}"
+      password: "{{ plex_password }}"
+      force_basic_auth: yes
+    ignore_errors: true
+    register: plex_claim
+
+  - name: Set 'plex_claim_code' variable
+    set_fact:
+      plex_claim_code: "{{ plex_claim.json.token }}"
+
+  - name: Claim server
+    uri:
+      url: "http://localhost:32400/myplex/claim?token={{ plex_claim_code }}"
+      method: POST
+    register: plex_server_claimed
+    ignore_errors: true
+  
+  when: plex_username and plex_password
+
+- name: Start Plex server
+  service:
+    name: plexmediaserver
+    state: started
+
+- name: Set Plex Configuration
+  block:
+  - name: Get Plex Media Server token
+    uri:
+      url: https://plex.tv/users/sign_in.json
+      body_format: form-urlencoded
+      status_code: 201
+      method: POST
+      headers:
+        X-Plex-Client-Identifier: plex_init
+        X-Plex-Product: plex_init
+        X-Plex-Version: "0.1"
+      body:
+        'user[login]': "{{ plex_username }}"
+        'user[password]': "{{ plex_password }}"
+    register: plex_auth
+  
+  - debug:
+      msg: "{{ plex_auth }}"
+
+  - name: Set 'plex_token' variable
+    set_fact:
+      plex_token: "{{ plex_auth.json.user.authToken }}"
+
+  - name: Prepare configuration
+    set_fact:
+      plex_configuration:
+        FriendlyName: "{{ plex_server_name }}"
+        sendCrashReports: "{{ plex_server_send_crash_reports }}"
+        ManualPortMappingMode: "{{ plex_server_manual_port_mapping_mode }}"
+        ManualPortMappingPort: "{{ plex_server_manual_port_mapping_port }}"
+        ScheduledLibraryUpdatesEnabled: "{{ plex_server_scheduled_library_updates_enabled }}"
+        FSEventLibraryPartialScanEnabled: "{{ plex_server_fs_event_library_partial_scan_enabled }}"
+        FSEventLibraryUpdatesEnabled: "{{ plex_server_fs_event_library_updates_enabled }}"
+        PublishServerOnPlexOnlineKey: "{{ plex_server_remote_access }}"
+
+  - set_fact:
+      url_str: "{{ (url_str | default('')) + ('&' if (index > 0) else '') + (item.key+'='+item.value| urlencode) }}"
+    loop: "{{ plex_configuration | dict2items }}"
+    loop_control:
+      index_var: index
+
+  - debug:
+      msg: "{{ url_str }}"
+
+  - name: Set Configuration
+    uri:
+      url: "http://localhost:32400/:/prefs?{{ url_str }}"
+      method: PUT
+      headers:
+        X-Plex-Client-Identifier: plex_init
+        X-Plex-Product: plex_init
+        X-Plex-Version: "0.1"
+        X-Plex-Token: "{{ plex_token }}"
+    when: plex_token is defined
+  
+  - name: Refresh Reachability
+    uri:
+      url: http://localhost:32400/myplex/refreshReachability
+      method: PUT
+      headers:
+        X-Plex-Client-Identifier: plex_init
+        X-Plex-Product: plex_init
+        X-Plex-Version: "0.1"
+        X-Plex-Token: "{{ plex_token }}"
+    when: plex_token is defined
+    
+  when: plex_server_claimed and plex_username and plex_password 

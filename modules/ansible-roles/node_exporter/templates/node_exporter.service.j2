@@ -1,0 +1,13 @@
+[Unit]
+Description=Node_Exporter Service
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/bin/node_exporter --web.listen-address=:{{ listen_address }}
+
+[Install]
+WantedBy=multi-user.target

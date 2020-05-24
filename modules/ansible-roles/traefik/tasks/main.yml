@@ -1,0 +1,148 @@
+---
+- set_fact:
+    arch: amd64
+  when: ansible_architecture == 'x86_64'
+  tags:
+    - traefik
+    - install
+
+- set_fact:
+    arch: 386
+  when: ansible_architecture == 'i386'
+  tags:
+    - traefik
+    - install
+
+- name: Get latest release information
+  uri:
+    url: "{{ git_repo_api }}/releases/latest"
+    method: GET
+    body_format: json
+    status_code: 200
+    return_content: true
+  register: traefik_json_response
+  when: state == "present"
+  tags:
+    - traefik
+    - install
+
+- name: Delete Executable
+  become: yes
+  file: path={{ installation_path }}/traefik state=absent
+  tags:
+    - traefik
+    - install
+
+- name: Create directory {{ installation_path }}
+  become: yes
+  file:
+    path: "{{ installation_path }}"
+    state: directory
+    mode: 755
+  tags:
+    - traefik
+
+- name: Copy Config file
+  template:
+    src: "{{ config_file }}"
+    dest: "{{ installation_path }}/config.yml"
+  tags:
+    - traefik
+
+# - name: Synchronize Hosts
+#   synchronize:
+#     src: "{{ provider_file_directory }}"
+#     dest: "{{ installation_path }}"
+#     recursive: true
+#     delete: true
+#     mode: push
+#     rsync_opts:
+#       - "--chmod=F644"
+#   tags:
+#     - traefik
+
+- name: Extract latest release
+  become: yes
+  unarchive:
+    src: "{{ git_repo }}/releases/download/{{ traefik_json_response.json.tag_name }}/traefik_{{ traefik_json_response.json.tag_name }}_linux_{{ arch }}.tar.gz"
+    dest: "{{ installation_path }}"
+    remote_src: yes
+  when: state == "present"
+  tags:
+    - traefik
+    - install
+
+- name: Link executable to /usr/bin
+  become: yes
+  file:
+    src: "{{ installation_path }}/traefik"
+    dest: /usr/bin/traefik
+    state: link
+  when: state == "present" 
+  tags:
+    - traefik
+    - install
+
+- name: Create systemd file
+  become: yes
+  template:
+    src: templates/traefik.service.j2
+    dest: /etc/systemd/system/traefik.service
+  when: state == "present"
+  tags:
+    - traefik
+
+- name: Make sure traefik.service is stopped
+  become: yes
+  systemd:
+    name: traefik
+    state: stopped
+  when: state == "absent"
+  tags:
+    - traefik
+
+- name: Remove traefik bin file
+  become: yes
+  file:
+    path: /usr/bin/traefik
+    state: absent
+  when: state == "absent"
+  tags:
+    - traefik
+
+- name: Remove traefik.service file
+  become: yes
+  file:
+    path: /etc/systemd/system/traefik.service
+    state: absent
+  when: state == "absent"
+  tags:
+    - traefik
+
+- name: Reload systemd
+  become: yes
+  systemd:
+    daemon_reload: yes
+  tags:
+    - traefik
+    - restart
+
+- name: Make sure traefik.service is enabled
+  become: yes
+  systemd:
+    name: traefik
+    enabled: yes
+  when: state == "present"
+  tags:
+    - traefik
+    - restart
+
+- name: Restart traefik.service
+  become: yes
+  systemd:
+    name: traefik
+    state: restarted
+  when: state == "present"
+  tags:
+    - traefik
+    - restart

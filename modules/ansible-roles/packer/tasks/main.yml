@@ -1,0 +1,68 @@
+- set_fact:
+    arch: amd64
+  when: ansible_architecture == 'x86_64'
+  tags:
+    - packer
+
+- set_fact:
+    arch: 386
+  when: ansible_architecture == 'i386'
+  tags:
+    - packer
+
+- set_fact:
+    os: linux
+  tags:
+    - packer
+
+- set_fact:
+    os: darwin
+  when: ansible_os_family == "Darwin"
+  tags:
+    - packer
+
+- name: Install unzip
+  become: yes
+  package:
+    name: unzip
+    state: present
+  tags:
+    - packer
+
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ installation_path }}"
+    state: directory
+    mode: 0755
+  tags:
+    - packer
+
+- name: Get latest release information
+  uri:
+    url: "{{ git_repo_api }}/releases/latest"
+    method: GET
+    body_format: json
+    status_code: 200
+    return_content: true
+  register: packer_json_response
+  when: state == "present"
+  tags:
+    - packer
+
+- name: Delete executable
+  become: yes
+  file: path={{ installation_path }}/packer state=absent
+  tags:
+    - packer
+
+- name: Extract latest release
+  become: yes
+  unarchive:
+    src: "https://releases.hashicorp.com/packer/{{ packer_json_response.json.tag_name[1:] }}/packer_{{ packer_json_response.json.tag_name[1:] }}_{{ os }}_{{ arch }}.zip"
+    dest: "{{ installation_path }}"
+    remote_src: yes
+    mode: 0755
+  when: state == "present"
+  tags:
+    - packer

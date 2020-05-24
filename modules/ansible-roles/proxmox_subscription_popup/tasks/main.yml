@@ -1,0 +1,7 @@
+---
+- name: Remove subscription popup in Web UI 
+  become: yes
+  script:
+    cmd: remove_subscription_popup.sh
+  tags:
+    - always

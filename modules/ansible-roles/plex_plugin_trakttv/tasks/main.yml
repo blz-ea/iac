@@ -1,0 +1,43 @@
+---
+- name: Install packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - unzip
+    - curl
+    - jq
+
+- name: Remove Previous Trakt.tv plugin
+  file:
+    path: "{{ plex_home_directory }}/Trakttv.bundle"
+    state: absent
+
+- name: Get latest version available for Trakt.tv plugin
+  shell: "curl -s {{ git_repo_api }}/releases/latest | jq -r .tag_name"
+  args:
+    warn: no
+  register: trakttv_latest_version
+  ignore_errors: yes
+
+- name: Get latest Trakt.tv Plugin URL
+  shell: |
+    curl -s {{ git_repo_api }}/releases/latest \
+    | jq -r ".assets[] | select(.name | test(\"linux_x86_64\")) | .browser_download_url"
+  args:
+    warn: no
+  register: trakttv_download_url
+  ignore_errors: yes
+
+- name: Set 'trakttv_download_url' variable
+  set_fact:
+    trakttv_download_url: "{{ trakttv_download_url.stdout }}"
+
+- name: Install Trakt.tv plugin
+  unarchive:
+    src: "{{ trakttv_download_url }}"
+    dest: "{{ plex_home_directory }}/Plug-ins"
+    copy: no
+    mode: 0775
+    validate_certs: no
+  ignore_errors: yes

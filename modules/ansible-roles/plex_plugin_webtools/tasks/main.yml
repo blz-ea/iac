@@ -1,0 +1,102 @@
+---
+- name: Install packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - unzip
+    - curl
+    - jq
+
+- name: Check for previously installed WebTools Plugin
+  stat:
+    path: "{{ plex_home_directory }}/Plug-ins/WebTools.bundle/VERSION"
+  register: webtools_bundle
+
+- name: Tasks for previously installed WebTools Plugin
+  block:
+
+  - name: Set default value for 'webtools_outdated' variable
+    set_fact:
+      webtools_outdated: false
+
+  - name: Check version of previously installed WebTools Plugin
+    shell: "cat '{{ plex_home_directory }}/Plug-ins/WebTools.bundle/VERSION' |  head -n 1 | awk '{ print }'"
+    register: webtools_previously_installed_version
+
+  - name: Get latest release information
+    uri:
+      url: "{{ git_repo_api }}/releases/latest"
+      method: GET
+      body_format: json
+      status_code: 200
+      return_content: true
+    register: webtools_latest_version
+
+  - name: Compare installed WebTools Plugin version with latest one
+    set_fact:
+      webtools_outdated: "{{ (webtools_latest_version is failed) or
+        ((webtools_latest_version is success) and (webtools_previously_installed_version.stdout is version(webtools_latest_version.json.tag_name, '<', strict=True))) }}"
+
+  when: webtools_bundle.stat.exists
+
+- name: Install Webtools Plugin
+  block:
+
+  - name: Remove outdated WebTools Plugin
+    file:
+      path: "{{ plex_home_directory }}/Plug-ins/WebTools.bundle"
+      state: absent
+
+  - name: Get latest release information
+    uri:
+      url: "{{ git_repo_api }}/releases/latest"
+      method: GET
+      body_format: json
+      status_code: 200
+      return_content: true
+    register: webtools_latest_version
+
+  - name: Create 'plug-ins' directory
+    file: "path={{ item }} state=directory mode=0775"
+    with_items:
+      - "{{ plex_home_directory }}/Plug-ins"
+  
+  - name: Install WebTools Plugin
+    unarchive:
+      src: "{{ git_repo }}/releases/download/{{ webtools_latest_version.json.tag_name }}/WebTools.bundle.zip"
+      dest: "{{ plex_home_directory }}/Plug-ins"
+      copy: no
+      mode: 0775
+      validate_certs: no
+    register: download_webtools
+    ignore_errors: yes
+
+  - name: Post-Successful WebTools Plugin Download
+    block:
+
+    - name: Check for newly installed WebTools Plugin
+      stat:
+        path: "{{ plex_home_directory }}/Plug-ins/WebTools.bundle/VERSION"
+      register: webtools_version_file
+
+    - name: Post-Successfull WebTools Plugin Install
+      block:
+
+      - name: Check version of newly installed WebTools Plugin
+        shell: "cat '{{ plex_home_directory }}/Plug-ins/WebTools.bundle/VERSION' |  head -n 1 | awk '{ print }'"
+        register: webtools_newly_installed_version
+
+      - name: Set 'webtools_newly_installed_version' variable
+        set_fact:
+          webtools_newly_installed_version: "{{ webtools_newly_installed_version.stdout }}"
+
+      - name: Display WebTools Plugin version
+        debug:
+          msg: "WebTools Plugin version {{ webtools_newly_installed_version }} installed."
+
+      when: (webtools_version_file.stat.exists)
+
+    when: (download_webtools is success)
+
+  when: (not webtools_bundle.stat.exists) or ((webtools_bundle.stat.exists) and (webtools_outdated)) or ('reinstall-webtools-plugin' in ansible_run_tags)

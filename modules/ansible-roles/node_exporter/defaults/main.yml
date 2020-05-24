@@ -1,4 +1,6 @@
 ---
+git_repo: https://github.com/prometheus/node_exporter
+git_repo_api: https://api.github.com/repos/prometheus/node_exporter
 installation_path: /usr/share
 listen_address: 9100
 state: present

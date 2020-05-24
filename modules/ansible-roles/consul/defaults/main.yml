@@ -1,0 +1,38 @@
+---
+git_repo_api: https://api.github.com/repos/hashicorp/consul
+installation_path: /usr/bin
+
+version: latest
+
+bootstrap: false
+node_name: false
+ui: false
+
+client_addr: false
+domain_name: None
+datacenter_name: None
+data_dir: /var/consul/data/
+config_dir: /etc/consul/config.d/
+bootstrap_expect: 1
+enable_script_checks: !!str true
+enable_syslog: !!str true
+
+encrypt_key: None
+leave_on_terminate: !!str true
+log_level: INFO
+rejoin_after_leave: !!str true
+server: !!str true
+
+dns_config: false
+dns_config_enable_truncate: !!str true
+dns_config_only_passing: !!str true
+
+ports: false
+ports_dns: 8600
+ports_http: 8500
+ports_https: 8501
+ports_grpc: 8502
+
+recursors: []
+
+start_join: []

@@ -4,7 +4,7 @@ image: minio/minio
 container_name: minio
 hostname: minio
 folders: []
-published_ports: [ 9000:9000 ]
+published_ports: [ "9000:9000" ]
 command: server
 networks: []
 recreate: yes

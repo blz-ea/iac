@@ -1,0 +1,4 @@
+---
+plex_home_directory: "/var/lib/plexmediaserver/Library/Application Support/Plex Media Server"
+git_repo_api: https://api.github.com/repos/pannal/Sub-Zero.bundle
+git_repo: http://github.com/pannal/Sub-Zero.bundle

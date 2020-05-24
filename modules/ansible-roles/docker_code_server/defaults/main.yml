@@ -3,7 +3,7 @@ image: linuxserver/code-server
 container_name: vcs
 hostname: vcs
 recreate: yes
-published_ports: [ 8443:8443 ]
+published_ports: [ "8443:8443" ]
 data_folder: /opt/docker-data
 depends_on: omit
 networks: []

@@ -1,0 +1,47 @@
+---
+- name: Install additional packages
+  become: true
+  package:
+    name: 
+      - apt-transport-https
+      - gnupg
+      - gnupg2
+  tags:
+    - jellyfin
+
+- name: Add an signing key
+  become: true
+  apt_key:
+    url: https://repo.jellyfin.org/jellyfin_team.gpg.key
+    state: present
+  tags:
+    - jellyfin
+
+- stat:
+    path: /etc/apt/sources.list.d/jellyfin.list
+  register: jellyfin_list
+  tags:
+    - jellyfin
+
+- name: Add Jellyfin repository
+  become: true
+  shell: echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/$( awk -F'=' '/^ID=/{ print $NF }' /etc/os-release ) $( awk -F'=' '/^VERSION_CODENAME=/{ print $NF }' /etc/os-release ) main" | sudo tee /etc/apt/sources.list.d/jellyfin.list
+  when: not jellyfin_list.stat.exists
+  tags:
+    - jellyfin
+
+- name: Update packages cache
+  become: true
+  apt:
+    update_cache: "yes"
+  tags:
+    - jellyfin
+
+- name: Install Jellyfin server
+  become: true
+  package:
+    name: 
+      - jellyfin
+  tags:
+    - jellyfin
+

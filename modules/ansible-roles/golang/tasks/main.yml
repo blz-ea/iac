@@ -1,0 +1,55 @@
+---
+- name: Remove existing installation
+  file:
+    path: "{{ go_root }}"
+    state: absent
+  tags:
+    - golang
+
+- name: Get release information
+  uri:
+    url: "{{ git_repo_api }}/git/refs/tags"
+    method: GET
+    body_format: json
+    status_code: 200
+    return_content: true
+  register: golang_refs
+  when:
+    - state == "present"
+    - version == "latest"
+  tags:
+    - golang
+
+- name: Extract latest version from response
+  set_fact:
+    max_version: "{{ (item.ref.split('/')[2])[2:] }}"
+  with_items: "{{ golang_refs.json }}"
+  when:
+    - version == "latest"
+    - state == "present"
+    - item.ref | d(false)
+    - item.ref is regex("^refs/tags/go(\d+\.)?(\d+\.)?(\*|\d+)$")
+    - max_version | default('0') is version(item, '<')
+  no_log: true
+  tags:
+    - golang
+
+- name: Installing {{ max_version | default(version) }}
+  environment:
+    GOROOT: "{{ go_root }}"
+    GOPATH: "{{ go_path }}"
+  script:
+    cmd: "go_install.sh --version {{ max_version | default(version) }}"
+  when: state == "present"
+  tags:
+    - golang
+
+- name: Remove installation
+  environment:
+    GOROOT: "{{ go_root }}"
+    GOPATH: "{{ go_path }}"
+  script:
+    cmd: "go_install.sh --remove" 
+  when: state == "absent"
+  tags:
+    - golang

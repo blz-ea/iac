@@ -1,0 +1,4 @@
+---
+plex_home_directory: "/var/lib/plexmediaserver/Library/Application Support/Plex Media Server"
+git_repo_api: https://api.github.com/repos/trakt/Plex-Trakt-Scrobbler
+git_repo: https://github.com/trakt/Plex-Trakt-Scrobbler

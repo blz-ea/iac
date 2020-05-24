@@ -1,0 +1,4 @@
+---
+git_repo_api: https://api.github.com/repos/hashicorp/packer
+installation_path: /usr/local/bin
+state: present

@@ -1,0 +1,48 @@
+# Plex Account username
+plex_username: false
+plex_password: false
+
+# Plex server name
+plex_server_name: plex
+# Send crash reports
+plex_server_send_crash_reports: 0
+# Manual Port mapping
+plex_server_manual_port_mapping_mode: 1
+# Manual Port
+plex_server_manual_port_mapping_port: 32400
+# Scan my library automatically
+plex_server_scheduled_library_updates_enabled: 1
+# Run a partial scan when changes are detected
+plex_server_fs_event_library_partial_scan_enabled: 1
+# Scan my library periodically
+plex_server_fs_event_library_updates_enabled: 1
+# Enable Remote Access
+plex_server_remote_access: "true"
+
+# Version of Plexupdate to install, gets passed to git module
+plexupdate_version: master
+# Plexupdate install location
+plexupdate_install_location: /opt/plexupdate/
+# Plexupdate config location
+plexupdate_config_location: /etc/plexupdate.conf
+# Plexupdate interval (comply with cron.interval) (hourly, daily, weekly, monthly)
+plexupdate_interval: daily
+
+# Config options for plexupdate correspond to https://github.com/mrworf/plexupdate#advanced-options
+
+# If Plexupdate will automatically install newly downloaded version (adds crontab entry)
+plexupdate_autoinstall: true
+# If Plexupdate will update itself using git (adds crontab entry)
+plexupdate_autoupdate: true
+# If Plexupdate will delete the downloaded package after installation to conserve disk space
+plexupdate_autodelete: true
+# If set, and combined with plexupdate_autoinstall, the script will automatically check if the server is in use and defer the update
+plexupdate_plexserver: 127.0.0.1
+# Sets the port to use along with plexupdate_plexserver
+plexupdate_plexport: 32400
+# If Plexupdate will download the public release (set to no to download PlexPass releases)
+plexupdate_public: true
+# Set to Plex Pass (most of the times not needed see: https://github.com/mrworf/plexupdate/wiki/Authenticating-with-Plex-Pass)
+plexupdate_token: ""
+# If Plexupdate will notify by mail after cron error
+plexupdate_notify: false

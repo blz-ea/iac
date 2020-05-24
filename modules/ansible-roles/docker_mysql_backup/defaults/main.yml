@@ -1,0 +1,4 @@
+---
+data_folder: /opt/docker-data/backups/mysql
+username: root
+dbs: []

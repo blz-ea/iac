@@ -32,8 +32,8 @@
     - oh_my_zsh
 
 - name: Set /home/{{ username }}/.zshrc
-  copy:
-    content: |
+  blockinfile:
+    block: |
               export ZSH=/home/{{ username }}/.oh-my-zsh
               ZSH_THEME="robbyrussell"
 
@@ -81,30 +81,10 @@
               # Initialize the autocompletion
               autoload -Uz compinit && compinit -i
 
-    dest: /home/{{username}}/.zshrc
-  tags: 
+    path: /home/{{username}}/.zshrc
+    create: true
+  tags:
     - oh_my_zsh
-
-# - name: Update .zshrc - Add zsh-autosuggestions custom plugin
-#   lineinfile:
-#     dest: /home/{{username}}/.zshrc
-#     line: 'source /home/{{username}}/.oh-my-zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh'
-#   tags: 
-#     - oh_my_zsh
-
-# - name: Update .zshrc - Add zsh-syntax-highlighting custom plugin
-#   lineinfile:
-#     dest: /home/{{username}}/.zshrc
-#     line: 'source /home/{{username}}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh'
-#   tags: 
-#     - oh_my_zsh
-
-# - name: Updating .zshrc - setopt inc_append_history
-#   lineinfile:
-#     dest: /home/{{username}}/.zshrc
-#     line: 'setopt inc_append_history'
-#   tags: 
-#     - oh_my_zsh
 
 - name: Change deployment user shell
   become: yes

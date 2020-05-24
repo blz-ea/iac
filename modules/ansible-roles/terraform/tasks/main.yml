@@ -1,0 +1,68 @@
+- set_fact:
+    arch: amd64
+  when: ansible_architecture == 'x86_64'
+  tags:
+    - terraform
+
+- set_fact:
+    arch: 386
+  when: ansible_architecture == 'i386'
+  tags:
+    - terraform
+
+- set_fact:
+    os: linux
+  tags:
+    - terraform
+
+- set_fact:
+    os: darwin
+  when: ansible_os_family == "Darwin"
+  tags:
+    - terraform
+
+- name: Install unzip
+  become: yes
+  package:
+    name: unzip
+    state: present
+  tags:
+    - terraform
+
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ installation_path }}"
+    state: directory
+    mode: 0755
+  tags:
+    - terraform
+
+- name: Get latest release information
+  uri:
+    url: "{{ git_repo_api }}/releases/latest"
+    method: GET
+    body_format: json
+    status_code: 200
+    return_content: true
+  register: terraform_json_response
+  when: state == "present"
+  tags:
+    - terraform
+
+- name: Delete executable
+  become: yes
+  file: path={{ installation_path }}/terraform state=absent
+  tags:
+    - terraform
+
+- name: Extract latest release
+  become: yes
+  unarchive:
+    src: "https://releases.hashicorp.com/terraform/{{ terraform_json_response.json.tag_name[1:] }}/terraform_{{ terraform_json_response.json.tag_name[1:] }}_linux_{{ arch }}.zip"
+    dest: "{{ installation_path }}"
+    remote_src: yes
+    mode: 0755
+  when: state == "present"
+  tags:
+    - terraform

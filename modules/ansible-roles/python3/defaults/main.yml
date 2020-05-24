@@ -1,0 +1,6 @@
+tmp_dir: "/tmp/python3_install" 
+username: "{{ ansible_user }}"
+dist: None
+pyenv: yes
+pyenv_global: yes
+pyenv_version: "3.8.2"

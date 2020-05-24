@@ -1,0 +1,6 @@
+---
+git_repo_api: https://api.github.com/repos/golang/go
+state: present
+go_root: /home/{{ ansible_user }}/.go
+go_path: /home/{{ ansible_user }}/go
+version: latest 

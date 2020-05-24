@@ -1,31 +1,37 @@
 ---
 - name: Install `python-minimal`
+  become: true
   raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
   register: output
   changed_when: output.stdout != ""
   tags:
     - preflight
     - check
+    - python
 
 - name: Install `python-setup-tools`
+  become: yes
   raw: test -e /usr/bin/pip || (apt -y update && apt install -y python-pip python-dev build-essential python-setuptools)
   register: output
   changed_when: output.stdout != ""
   tags:
     - preflight
     - check
+    - python
 
 - name: Update and upgrade apt packages
   become: true
   apt:
-    upgrade: yes
-    update_cache: yes
+    upgrade: "yes"
+    update_cache: "yes"
     cache_valid_time: 86400 # One day
   tags:
     - preflight
     - check
+    - upgrade
 
 - name: Install `pip` repositories
+  become: true
   package:
     name: ['epel-release','centos-release-scl']
     state: latest
@@ -33,6 +39,7 @@
   tags:
     - preflight
     - check
+    - pip
 
 - name: Install `pip`
   package:
@@ -42,14 +49,17 @@
   tags:
     - preflight
     - check
+    - pip
 
 - name: Install `pip`
+  become: yes
   apt:
     pkg: ['python3-pip']
     state: latest
   tags:
     - preflight
     - check
+    - pip
 
 - name: Installing python modules
   become: true
@@ -59,6 +69,9 @@
       - pip
       - ansible
       - docker-compose
+      - python-consul
+      - requests
   tags:
     - preflight
     - check
+    - pip

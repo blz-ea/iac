@@ -1,0 +1,11 @@
+[Unit]
+Description=Home Assistant
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/hass
+
+[Install]
+WantedBy=multi-user.target

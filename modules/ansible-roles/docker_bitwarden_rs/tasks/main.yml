@@ -1,0 +1,36 @@
+---
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0777
+  with_items:
+    - "{{ data_folder }}/{{ container_name }}/data"
+  tags:
+    - docker
+    - container
+    - bitwarden_rs
+
+- name: Create and start container
+  docker_container:
+    name: "{{ container_name }}"
+    recreate: "{{ recreate }}"
+    image: "{{ image }}"
+    hostname: "{{ hostname }}"
+    published_ports: "{{ published_ports }}"
+    env:
+      WEBSOCKET_ENABLED: "{{ WEBSOCKET_ENABLED }}"
+      SIGNUPS_ALLOWED: "{{ SIGNUPS_ALLOWED }}"
+      DISABLE_ADMIN_TOKEN: "{{ DISABLE_ADMIN_TOKEN }}"
+      INVITATIONS_ALLOWED: "{{ INVITATIONS_ALLOWED }}"
+    volumes:
+      - "{{ data_folder }}/{{ container_name }}/data/:/data"
+    restart_policy: unless-stopped
+    networks_cli_compatible: yes
+    state: "{{ state }}"
+    networks: "{{ networks }}"
+  tags:
+    - docker
+    - container
+    - bitwarden_rs

@@ -1,0 +1,74 @@
+{% if bootstrap is not sameas false %}
+bootstrap = true
+{% endif %}
+
+{% if node_name is not sameas false %}
+node_name = "{{ node_name }}"
+{% endif %}
+
+{% if ui is sameas true %}
+ui = true
+{% endif %}
+
+{% if client_addr is not sameas false %}
+client_addr = "{{ client_addr }}"
+{% endif %}
+
+{% if domain_name != "None" %}
+domain = "{{ domain_name }}"
+{% endif %}
+
+{% if datacenter_name != "None" %}
+datacenter = "{{ datacenter_name }}"
+{% endif %}
+
+data_dir = "{{ data_dir }}"
+
+enable_script_checks = {{ enable_script_checks }}
+enable_syslog = {{ enable_syslog }}
+
+{% if encrypt_key != "None" %}
+encrypt = "{{ encrypt_key }}"
+{% endif %}
+
+leave_on_terminate = {{ leave_on_terminate }}
+log_level = "{{ log_level }}"
+rejoin_after_leave = {{ rejoin_after_leave }}
+
+{% if server is sameas true %}
+server = true
+{% endif %}
+
+start_join = [
+{% for server in start_join %}
+"{{ server }}",
+{% endfor %}
+]
+
+# acl = {
+#   enabled = true
+#   default_policy = "deny"
+#   enable_token_persistence = true
+# }
+
+{% if dns_config is not sameas false %}
+dns_config = {
+    enable_truncate = {{ dns_config_enable_truncate }}
+    only_passing = {{ dns_config_only_passing }}
+}
+{% endif %}
+
+{% if ports is not sameas false %}
+ports = {
+    dns = {{ ports_dns }}
+    http = {{ ports_http }}
+    https = {{ ports_https }}
+    grpc = {{ ports_grpc }}
+}
+{% endif %}
+
+recursors = [
+{% for dns_server in recursors %}
+"{{ dns_server }}",
+{% endfor %}
+]

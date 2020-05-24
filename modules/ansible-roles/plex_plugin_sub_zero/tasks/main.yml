@@ -1,0 +1,120 @@
+---
+- name: Install packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - unzip
+    - python3-pip
+
+- name: Installing python modules
+  pip:
+    name: 
+      - lxml
+
+- name: Check for previously installed Sub-Zero plugin
+  stat:
+    path: "{{ plex_home_directory }}/Plug-ins/Sub-Zero.bundle/Contents/Info.plist"
+  register: subzero_bundle
+
+- name: Check previously installed Sub-Zero plugin
+  block:
+
+  - name: Set default value for 'subzero_outdated' variable
+    set_fact:
+      subzero_outdated: false
+
+  - name: Check version of previously installed Sub-Zero
+    xml:
+      path: "{{ plex_home_directory }}/Plug-ins/Sub-Zero.bundle/Contents/Info.plist"
+      xpath: /plist/dict/key[.='CFBundleVersion']/following-sibling::*[1]
+      content: 'text'
+    register: xmlresp
+
+  - name: Set 'subzero_previously_installed_version' variable
+    set_fact:
+      subzero_previously_installed_version: "{{ xmlresp.matches[0].string }}"
+  
+  - name: Get latest release information
+    uri:
+      url: "{{ git_repo_api }}/releases/latest"
+      method: GET
+      body_format: json
+      status_code: 200
+      return_content: true
+    register: subzero_latest_version
+
+  - name: Compare installed Sub-Zero Plugin version with latest one
+    set_fact:
+      subzero_outdated: "{{ (subzero_latest_version.json.tag_name is failed) or
+        ((subzero_latest_version.json.tag_name is success) and (subzero_previously_installed_version is version(subzero_latest_version.json.tag_name, '<'))) }}"
+
+  when: subzero_bundle.stat.exists
+
+- name: Install Sub-Zero Plugin
+  block:
+
+  - name: Remove outdated Sub-Zero Plugin
+    file:
+      path: "{{ plex_home_directory }}/Plug-ins/Sub-Zero.bundle"
+      state: absent
+
+  - name: Get latest release information
+    uri:
+      url: "{{ git_repo_api }}/releases/latest"
+      method: GET
+      body_format: json
+      status_code: 200
+      return_content: true
+    register: sub_zero_json_response
+  
+  - name: Create 'plug-ins' directory
+    file: "path={{ item }} state=directory mode=0775"
+    with_items:
+      - "{{ plex_home_directory }}/Plug-ins"
+
+  - name: Extract latest release
+    become: yes
+    unarchive:
+      src: "{{ git_repo }}/releases/download/{{ sub_zero_json_response.json.tag_name }}/Sub-Zero.bundle-{{ sub_zero_json_response.json.tag_name }}.zip"
+      dest: "{{ plex_home_directory }}/Plug-ins"
+      remote_src: yes
+    register: download_subzero
+  
+  - name: Post-Successfull Sub-Zero Plugin Download
+    block:
+
+    - name: Check for newly installed Sub-Zero Plugin
+      stat:
+        path: "{{ plex_home_directory }}/Plug-ins/Sub-Zero.bundle/Contents/Info.plist"
+      register: subzero_info_plist
+
+    - name: Post-Successfull Sub-Zero Plugin Install
+      block:
+
+      - name: Check version of newly installed Sub-Zero Plugin
+        xml:
+          path: "{{ plex_home_directory }}/Plug-ins/Sub-Zero.bundle/Contents/Info.plist"
+          xpath: /plist/dict/key[.='CFBundleVersion']/following-sibling::*[1]
+          content: 'text'
+        register: xmlresp
+
+      - name: Set 'subzero_newly_installed_version' variable
+        set_fact:
+          subzero_newly_installed_version: "{{ xmlresp.matches[0].string }}"
+
+      - name: Display Sub-Zero Plugin version
+        debug:
+          msg: "Sub-Zero Plugin version {{ subzero_newly_installed_version }} installed."
+
+      when: (subzero_info_plist.stat.exists)
+
+    when: (download_subzero is success)
+
+  when: (not subzero_bundle.stat.exists) or ((subzero_bundle.stat.exists) and (subzero_outdated))
+
+- debug:
+    msg: "Sub-Zero was already installed."
+  when:
+    - (subzero_bundle.stat.exists)
+    - (not subzero_outdated)

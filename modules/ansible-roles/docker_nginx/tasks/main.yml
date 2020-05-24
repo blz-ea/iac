@@ -14,29 +14,6 @@
     - docker
     - container
     - nginx
-
-# - name: Copy Nginx configuration
-#   become: yes
-#   template:
-#     src: "etc/nginx/nginx.conf.j2"
-#     dest: "{{ data_folder}}/{{ container_name }}/etc/nginx.conf"
-#     owner: "root"
-#     group: "root"
-#     mode: 0644
-#   when: (role_path + '/templates/etc/nginx/nginx.conf.j2') is file
-#   tags:
-#     - nginx
-
-# - name: Set virtual hosts
-#   become: yes
-#   template:
-#     src: "etc/nginx/conf.d/vhost.conf.j2"
-#     dest: "{{ data_folder}}/{{ container_name }}/etc/conf.d/vhost.conf"
-#     owner: "root"
-#     group: "root"
-#     mode: 0644
-#   tags:
-#     - nginx
   
 - name: Create and start nginx container
   docker_container:

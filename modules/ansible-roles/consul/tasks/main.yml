@@ -1,0 +1,139 @@
+- set_fact:
+    arch: amd64
+  when: ansible_architecture == 'x86_64'
+  tags:
+    - consul
+
+- set_fact:
+    arch: 386
+  when: ansible_architecture == 'i386'
+  tags:
+    - consul
+
+- set_fact:
+    os: linux
+  tags:
+    - consul
+
+- set_fact:
+    os: darwin
+  when: ansible_os_family == "Darwin"
+  tags:
+    - consul
+
+- name: Install unzip
+  become: yes
+  package:
+    name: unzip
+    state: present
+  tags:
+    - consul
+
+- name: Create directories
+  become: yes
+  file: 
+    path: "{{ installation_path }}"
+    state: directory
+    mode: 0755
+  tags:
+    - consul
+    - install
+
+- name: Get release information
+  uri:
+    url: "{{ git_repo_api }}/git/refs/tags"
+    method: GET
+    body_format: json
+    status_code: 200
+    return_content: true
+  register: consul_refs
+  when:
+    - version == "latest"
+  tags:
+    - consul
+    - install
+
+- name: Extract latest version from response
+  set_fact:
+    max_version: "{{ (item.ref.split('/')[2])[1:] }}"
+  with_items: "{{ consul_refs.json }}"
+  when:
+    - version == "latest"
+    - item.ref | d(false)
+    - item.ref is regex("^refs/tags/v(\d+\.)?(\d+\.)?(\*|\d+)$")
+    - max_version | default('0') is version(item, '<')
+  tags:
+    - consul
+    - install
+
+- debug:
+    msg: "Version {{ max_version }} will be installed"
+  tags:
+    - consul
+    - install
+
+- name: Extract latest release
+  become: yes
+  unarchive:
+    src: "https://releases.hashicorp.com/consul/{{ max_version }}/consul_{{ max_version }}_{{ os }}_{{ arch }}.zip"
+    dest: "{{ installation_path }}"
+    remote_src: yes
+    mode: 0755
+  tags:
+    - consul
+    - install
+
+- name: Create config.d folder
+  become: yes
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0777
+    recurse: true
+  with_items:
+    - "{{ config_dir }}"
+    - "{{ data_dir }}"
+  tags:
+    - consul
+    
+- name: Create systemd file
+  become: yes
+  template:
+    src: templates/consul.service.j2
+    dest: /etc/systemd/system/consul.service
+  tags:
+    - consul
+
+- name: Create config file
+  become: yes
+  template:
+    src: templates/config.hcl.j2
+    dest: "{{ config_dir }}/config.hcl"
+  tags:
+    - consul
+
+- name: Reload systemd
+  become: yes
+  systemd:
+    daemon_reload: yes
+  tags:
+    - consul
+    - restart
+
+- name: Make sure consul.service is enabled
+  become: yes
+  systemd:
+    name: consul
+    enabled: yes
+  tags:
+    - consul
+    - restart
+
+- name: Restart consul.service
+  become: yes
+  systemd:
+    name: consul
+    state: restarted
+  tags:
+    - consul
+    - restart
