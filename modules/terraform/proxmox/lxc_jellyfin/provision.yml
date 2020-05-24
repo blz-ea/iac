@@ -1,0 +1,41 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  pre_tasks:
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:
+    - name: Wait for target to become reachable
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: "yes"
+        update_cache: "yes"
+        cache_valid_time: 86400 # One day
+
+    - name: Install Jellyfin
+      include_role:
+        name: jellyfin
+        apply:
+          become: yes
+      tags:
+        - always
+
+    - name: Install Consul Agent
+      include_role:
+        name: consul
+      vars:
+        encrypt_key: "{{ consul.default.encrypt_key }}"
+        domain_name: "{{ domain.name }}"
+        datacenter_name: "{{ consul.default.data_center }}"
+        start_join: "{{ consul[consul.default.data_center].servers | map(attribute='host') | list }}"

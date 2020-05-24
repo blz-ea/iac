@@ -1,0 +1,38 @@
+---
+- hosts: all
+  gather_facts: no
+  pre_tasks:
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:
+    - name: Stop Container
+      shell: "pct stop {{ container_id }} || true"
+
+    - name: Create mount directory
+      file:
+        path: "{{ lxc.storage_path }}/{{ container_name }}/{{ item.split(':')[1] }}"
+        owner: 100000
+        group: 100000
+        state: directory
+      with_items: "{{ lxc[container_name].mounts }}"
+      when: 
+        - item.split(':')[0] == "storage_path"
+
+    - name: Add mount points
+      command: "pct set {{ container_id }} -mp{{ item.0 }} {{ lxc.storage_path }}/{{ container_name }}{{ item.1.split(':')[1] }},mp={{ item.1.split(':')[1] }}"
+      with_indexed_items: "{{ lxc[container_name].mounts }}"
+      when:
+        - item.1.split(':')[0] == "storage_path"
+
+    - name: Add mount points
+      command: "pct set {{ container_id }} -mp{{ item.0 }} {{ item.1.split(':')[0] }},mp={{ item.1.split(':')[1] }}"
+      with_indexed_items: "{{ lxc[container_name].mounts }}"
+      when: item.1.split(':')[0] != "storage_path"
+
+    - name: Start Container
+      command: "pct start {{ container_id }}"

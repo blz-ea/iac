@@ -1,0 +1,62 @@
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  pre_tasks:
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:
+    - name: Stop Container
+      shell: "pct stop {{ container_id }} || true"
+
+    - name: Add extra configuration
+      command: "pct set {{ container_id }} --feature fuse=1,mount=nfs"
+
+    - name: Create mount directory
+      file:
+        path: "{{ lxc.storage_path }}/{{ container_name }}/{{ item.split(':')[1] }}"
+        owner: 100000
+        group: 100000
+        state: directory
+      with_items: "{{ lxc[container_name].mounts }}"
+      when: 
+        - item.split(':')[0] == "storage_path"
+
+    - name: Allow video groups to be accessed from the container
+      # For some reason `lineinfile` module didn't work
+      shell:
+        cmd: 'grep -qF "{{ item }}" /etc/pve/lxc/{{ container_id }}.conf  || echo "{{ item }}" | tee --append /etc/pve/lxc/{{ container_id }}.conf'
+      with_items:
+        - "lxc.autodev: 1"
+        - "lxc.cgroup.devices.allow: c 195:* rwm"
+        - "lxc.cgroup.devices.allow: c 236:* rwm"
+        - "lxc.cgroup.devices.allow: c 226:* rwm"
+
+    - name: Add `lxc.mount.entry`
+      # For some reason `lineinfile` module didn't work
+      shell:
+        cmd: 'grep -qF "{{ item }}" /etc/pve/lxc/{{ container_id }}.conf  || echo "lxc.mount.entry: {{ item.split(":")[1] }}" | tee --append /etc/pve/lxc/{{ container_id }}.conf'
+      with_items: "{{ lxc[container_name].mounts }}"
+      when:
+        - item.split(':')[0] == "lxc"
+
+    - name: Add mount points
+      command: "pct set {{ container_id }} -mp{{ item.0 }} {{ lxc.storage_path }}/{{ container_name }}{{ item.1.split(':')[1] }},mp={{ item.1.split(':')[1] }}"
+      with_indexed_items: "{{ lxc[container_name].mounts }}"
+      when:
+        - item.1.split(':')[0] == "storage_path"
+
+    - name: Add mount points
+      command: "pct set {{ container_id }} -mp{{ item.0 }} {{ item.1.split(':')[0] }},mp={{ item.1.split(':')[1] }}"
+      with_indexed_items: "{{ lxc[container_name].mounts }}"
+      when: 
+        - item.1.split(':')[0] != "storage_path"
+        - item.1.split(':')[0][:1] == "/"
+    
+    - name: Start Container
+      command: "pct start {{ container_id }}"

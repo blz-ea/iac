@@ -1,0 +1,83 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  pre_tasks:
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:
+    - name: Wait for target to become reachable
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: "yes"
+        update_cache: "yes"
+        cache_valid_time: 86400 # One day
+      tags:
+        - preflight
+        - check
+
+    - name: Install `pip`
+      become: yes
+      apt:
+        pkg: ['python3-pip']
+        state: latest
+      tags:
+        - preflight
+        - check
+
+    - name: Installing python modules
+      become: true
+      pip:
+        name: 
+          - docker
+          - pip
+          - ansible
+          - docker-compose
+      tags:
+        - preflight
+        - check
+  
+    - name: Install curl
+      package:
+        name: curl
+        state: present
+      tags:
+        - install
+  
+    - name: Install Docker
+      include_role:
+        name: docker
+        apply:
+          become: yes
+          tags:
+            always
+      tags:
+        - docker
+        - install
+
+    - name: Start Bitwarden_rs container
+      include_role:
+        name: docker_bitwarden_rs
+      vars:
+        SIGNUPS_ALLOWED: "false"
+      tags:
+        - bitwarden_rs
+
+    - name: Install Consul Agent
+      include_role:
+        name: consul
+      vars:
+        encrypt_key: "{{ consul.default.encrypt_key }}"
+        domain_name: "{{ domain.name }}"
+        datacenter_name: "{{ consul.default.data_center }}"
+        start_join: "{{ consul[consul.default.data_center].servers | map(attribute='host') | list }}"
