@@ -1,0 +1,100 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - name: Include variables
+      vars:
+        file: prod.yml
+      include_role:
+        name: vars
+      tags:
+        - always
+  tasks:
+    - name: Install Terraform
+      include_role:
+        name: terraform
+      tags:
+        - terraform
+    
+    - name: Install Packer
+      include_role:
+        name: packer
+      tags:
+        - packer
+
+    - name: Check if go installed
+      shell: "which go"
+      register: go_installation
+      ignore_errors: true
+      tags:
+        - terraform
+        - golang
+
+    - name: Install Go
+      include_role:
+        name: golang
+        apply:
+          tags:
+            - always
+      when: go_installation.rc != 0
+      tags:
+        - terraform
+        - golang
+
+    - name: Create ~/.terraform.d/plugins
+      file:
+        path: ~/.terraform.d/plugins
+        state: directory
+      tags:
+        - terraform
+        - plugins
+
+    - name: Clone third party proxmox plugins
+      git:
+        repo: https://github.com/danitso/terraform-provider-proxmox
+        dest: $GOPATH/src/terraform-provider-proxmox
+        force: yes
+      tags:
+        - terraform
+        - proxmox
+        - plugins
+
+    - name: Build executables
+      make:
+        chdir: $GOPATH/src/terraform-provider-proxmox
+        target: init
+      tags:
+        - terraform
+        - proxmox
+        - plugins
+
+    - name: Build executables
+      make:
+        chdir: $GOPATH/src/terraform-provider-proxmox
+        target: build
+      tags:
+        - terraform
+        - proxmox
+        - plugins
+
+    - name: Copy Executables
+      copy:
+        src: $GOPATH/src/terraform-provider-proxmox/bin/
+        dest: ~/.terraform.d/plugins
+        remote_src: true
+      tags:
+        - terraform
+        - proxmox
+        - plugins
+    
+    - name: Set permissions
+      file:
+        dest: ~/.terraform.d/plugins
+        mode: +x
+        recurse: yes
+      tags:
+        - terraform
+        - proxmox
+        - plugins
+
