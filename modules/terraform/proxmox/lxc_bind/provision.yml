@@ -1,0 +1,37 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  pre_tasks:
+  - name: Run Pre-tasks
+    include_role:
+      name: pre_tasks
+    tags:
+      - always
+  tasks:
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: "yes"
+        update_cache: "yes"
+        cache_valid_time: 86400 # One day
+    
+    - name: Install Bind DNS Server
+      include_role:
+        name: bind
+      vars:
+        bind_zone_dir: /var/cache/bind
+        bind_forwarders: "{{ terraform_config.bind_forwarders }}"
+        bind_recursion: true
+        bind_allow_query: ["any"]
+        bind_listen_ipv4: ["any"]
+        bind_zone_master_server_ip: "{{ ansible_default_ipv4.address }}"
+        bind_dns_keys: "{{ terraform_config.bind_dns_keys }}"
+        bind_zone_domains: "{{ terraform_config.bind_zone_domains }}"
+    
+    - name: Install Dns-Over-Https
+      include_role:
+        name: dns-over-https
+      vars:
+        doh_server_upstream_servers: "{{ terraform_config.doh_server_upstream_servers }}"
+    
