@@ -1,0 +1,3 @@
+[submodule "modules/ansible-roles/bind"]
+	path = modules/ansible-roles/bind
+	url = https://github.com/bertvv/ansible-role-bind/
