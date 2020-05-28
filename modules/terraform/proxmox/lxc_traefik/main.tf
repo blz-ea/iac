@@ -4,6 +4,20 @@ locals {
   node_username = var.proxmox.nodes.pve.ssh.username
   node_name = var.proxmox.nodes.pve.name
   container_name = var.data.container_name
+	
+	default_cli_options = [
+ 		"--log.level=ERROR",
+    "--global.sendAnonymousUsage=false",
+    "--serversTransport.insecureSkipVerify=true",
+    "--accessLog.bufferingSize=100",
+    "--api.dashboard=true",
+
+    "--metrics=true",
+    "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0",
+    "--metrics.prometheus.addEntryPointsLabels=true",
+    "--metrics.prometheus.addServicesLabels=true",
+    "--metrics.prometheus.manualRouting=true",
+	]
 }
 
 resource "null_resource" "depends_on" {
@@ -60,7 +74,7 @@ resource "proxmox_virtual_environment_container" "container" {
 		command = "ansible-playbook -i ${local.node_hostname}, ../modules/ansible-roles/lxc_register/tasks/main.yml -e 'ansible_user=${local.node_username}' -e 'pve_node=${local.node_name}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
+			ANSIBLE_FORCE_COLOR = "True",
 		}
 	}
 
@@ -89,7 +103,7 @@ resource "null_resource" "provision" {
 
 	# Append Additional Configuration to Container via SSH
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${local.node_hostname},' ../modules/terraform/lxc_traefik/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
+		command = "ansible-playbook -i '${local.node_hostname},' ${path.module}/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"
@@ -98,10 +112,14 @@ resource "null_resource" "provision" {
 
 	# Provision Container
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ../modules/terraform/lxc_traefik/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"
+			TERRAFORM_CONFIG = yamlencode({
+				traefik_cli_options = distinct(concat(var.cli_options, local.default_cli_options))
+				traefik_environment = var.environment
+			})
 		}
 	}
 	

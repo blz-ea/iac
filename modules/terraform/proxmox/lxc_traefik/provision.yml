@@ -3,20 +3,12 @@
   gather_facts: no
   become: yes
   pre_tasks:
-    - name: Include variables
-      vars:
-        file: prod.yml
-      include_role:
-        name: vars
-      tags:
-        - always
+  - name: Run Pre-tasks
+    include_role:
+      name: pre_tasks
+    tags:
+      - always
   tasks:
-    - set_fact:
-        consul_server: "{{ consul[consul.default.data_center].servers[0] }}"
-    
-    - set_fact:
-        catalog_endpoint: "{{ consul_server.host }}:{{ consul_server.port }}"
-
     - name: Install Traefik Service
       include_role:
         name: traefik
@@ -26,27 +18,14 @@
       vars:
         systemd_user: root
         systemd_group: root
-        certificate_resolver_cloudflare_email: "{{ cloudflare.email }}"
-        certificate_resolver_cloudflare_api_key: "{{ cloudflare.api_key }}"
-        # Main Configuration
-        config_file: "{{ playbook_dir }}/config.yml.j2"
-        # Consul KV store Backend
-        provider_consul: true
-        provider_consul_root_key: traefik
-        provider_consul_endpoints: "{{ consul[consul.default.data_center].servers }}"
-        # Consul Catalog Backend
-        provider_consul_catalog: true
-        provider_consul_catalog_expose_default: !!str false
-        provider_consul_catalog_data_center: "{{ consul.default.data_center }}"
-        provider_consul_catalog_scheme: "{{ consul_server.scheme }}"
-        provider_consul_catalog_endpoint: "{{ catalog_endpoint }}"
-        provider_consul_catalog_prefix: "traefik"
+        traefik_environment: "{{ terraform_config.traefik_environment }}"
+        traefik_cli_options: "{{ terraform_config.traefik_cli_options }}"
 
-    - name: Install Consul Agent
-      include_role:
-        name: consul
-      vars:
-        encrypt_key: "{{ consul.default.encrypt_key }}"
-        domain_name: "{{ domain.name }}"
-        datacenter_name: "{{ consul.default.data_center }}"
-        start_join: "{{ consul[consul.default.data_center].servers | map(attribute='host') | list }}"
+    # - name: Install Consul Agent
+    #   include_role:
+    #     name: consul
+    #   vars:
+    #     encrypt_key: "{{ consul.default.encrypt_key }}"
+    #     domain_name: "{{ domain.name }}"
+    #     datacenter_name: "{{ consul.default.data_center }}"
+    #     start_join: "{{ consul[consul.default.data_center].servers | map(attribute='host') | list }}"

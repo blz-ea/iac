@@ -24,4 +24,15 @@ variable "data" {
 
 variable "dependencies" {
   type = any
+  default = []
+}
+
+variable "cli_options" {
+  type = list
+  default = []
+}
+
+variable "environment" {
+  type = list
+  default = []
 }
