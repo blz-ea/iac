@@ -24,7 +24,7 @@
         - packer
 
     - name: Check if go installed
-      shell: "which go"
+      shell: "bash -ilc 'make'"
       register: go_installation
       ignore_errors: true
       tags:
