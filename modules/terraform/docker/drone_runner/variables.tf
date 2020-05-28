@@ -16,5 +16,3 @@ variable "container_name" {
   type = string
   default = "drone_runner_container"
 }
-
-

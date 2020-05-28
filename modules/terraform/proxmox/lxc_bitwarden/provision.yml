@@ -65,6 +65,8 @@
         - docker
         - install
 
+    # TODO: Replace this role with non-docker version
+    # Compile artifacts inside container
     - name: Start Bitwarden_rs container
       include_role:
         name: docker_bitwarden_rs

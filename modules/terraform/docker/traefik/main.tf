@@ -45,7 +45,7 @@ resource "null_resource" "depends_on" {
 }
 
 resource "docker_image" "image" {
-  name = "traefik:latest"
+  name = "traefik:${var.image_version}"
 
   depends_on = [
     null_resource.depends_on

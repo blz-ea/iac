@@ -2,6 +2,10 @@ variable "user" {
   type = any
 }
 
+variable "cloudflare" {
+  type = any
+}
+
 variable "proxmox" {
   type = any
 }
@@ -19,5 +23,9 @@ variable "consul" {
 }
 
 variable "lxc" {
+  type = any
+}
+
+variable "dependencies" {
   type = any
 }

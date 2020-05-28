@@ -1,5 +1,5 @@
 # 
-# Set Proxmox DNS settings
+# Proxmox Nodes DNS settings
 # 
 resource "proxmox_virtual_environment_dns" "pve_node_dns_configuration" {
   domain = var.domain.name

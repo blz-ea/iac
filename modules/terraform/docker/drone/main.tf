@@ -5,7 +5,6 @@ locals {
     "org.label-schema.schema-version=1.0",
     "org.label-schema.vcs-ref=d1a2f2174db51f4011ec4ab212ad4704c71c751e",
     "org.label-schema.vcs-url=https://github.com/drone/drone.git",
-    "traefik.enable=true",
   ]
   default_env = [
     "DRONE_DATABASE_DATASOURCE=/data/database.sqlite",

@@ -4,7 +4,7 @@ locals {
   node_username = var.proxmox.nodes.pve.ssh.username
   node_name = var.proxmox.nodes.pve.name
   container_name = var.data.container_name
-  container_ip_address = substr(var.data.ip_config.ipv4.address, 0, 13)
+  container_ip_address = split("/", var.data.ip_config.ipv4.address)[0]
 }
 
 resource "proxmox_virtual_environment_container" "container" {
@@ -59,7 +59,7 @@ resource "proxmox_virtual_environment_container" "container" {
 resource "null_resource" "provision" {
 	# Append Additional Configuration to Container via SSH
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${local.node_hostname},' ../modules/terraform/lxc_consul/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
+		command = "ansible-playbook -i '${local.node_hostname},' ${path.module}/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"
@@ -68,7 +68,7 @@ resource "null_resource" "provision" {
 
 	# Provision Container
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${local.container_ip_address},' ../modules/terraform/lxc_consul/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		command = "ansible-playbook -i '${local.container_ip_address},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"
@@ -79,8 +79,4 @@ resource "null_resource" "provision" {
     command = "sleep 15"
   }
 
-}
-
-output "id" {
-	value = null_resource.provision.id
 }

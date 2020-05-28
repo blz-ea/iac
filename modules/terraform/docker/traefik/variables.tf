@@ -31,4 +31,7 @@ variable "container_name" {
   default = "traefik_container"
 }
 
-
+variable "image_version" {
+  type = string
+  default = "latest"
+}

@@ -46,12 +46,17 @@ module "dns" {
 	  proxmox 		= proxmox
 		cloudflare  = cloudflare
   }
+
   source = "./dns"
 
   proxmox 			= local.proxmox
 	cloudflare 		= local.cloudflare
 	bastion 			= local.bastion
 	domain 				= local.domain
+	user					= local.user
+	lxc						= local.lxc
+	consul 				= local.consul
+	vztmpl 				= module.proxmox_file.vztmpl
 }
 
 # Provision Proxmox LXC Containers
@@ -60,12 +65,18 @@ module "proxmox_lxc" {
 		proxmox 	= proxmox
 		consul 		= consul
 	}
+
 	user 				= local.user
 	proxmox 		= local.proxmox
 	lxc 				= local.lxc
 	domain 			= local.domain
 	consul 			= local.consul
 	vztmpl 			= module.proxmox_file.vztmpl
+	cloudflare  = local.cloudflare
+
+	dependencies = [
+		# module.dns.bind_server_id
+	]
 
 	source = "./lxc"
 }

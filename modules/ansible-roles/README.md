@@ -6,7 +6,6 @@
 ## Docker ##
 
 - `docker` - Installs specified Docker version
-  - `docker_create_networks`
   - `docker_code_server`
   - `docker_minio`
   - `docker_mongodb`

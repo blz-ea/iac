@@ -6,6 +6,7 @@ module "drone" {
 
   labels = [
     # Dashboard route
+    "traefik.enable=true",
     "traefik.http.routers.${local.drone_container_name}.entryPoints=https",
     "traefik.http.routers.${local.drone_container_name}.rule=Host(`${local.drone_namespace.hostname}`)",
     "traefik.http.routers.${local.drone_container_name}.tls.certResolver=cloudflare",

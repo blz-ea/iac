@@ -89,7 +89,7 @@ resource "null_resource" "provision" {
 
 	# Append Additional Configuration to Container via SSH
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${local.node_hostname},' ../modules/terraform/lxc_plex/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
+		command = "ansible-playbook -i '${local.node_hostname},' ${path.module}/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"
@@ -98,7 +98,7 @@ resource "null_resource" "provision" {
 
 	# Provision Container
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ../modules/terraform/lxc_plex/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"

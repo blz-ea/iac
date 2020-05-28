@@ -81,7 +81,7 @@ data "consul_keys" "container" {
 resource "null_resource" "provision" {
 	# Provision Container
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ../modules/terraform/lxc_pihole/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"
