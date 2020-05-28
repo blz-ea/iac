@@ -1,0 +1,12 @@
+---
+- name: Wait for target to become reachable
+  wait_for_connection:
+    delay: "{{ pre_task_delay }}"
+    timeout: "{{ pre_task_timeout }}"
+
+- setup:
+    gather_subset: "{{ pre_task_gather }}"
+
+- name: Get variables passed from Terraform
+  set_fact:
+    terraform_config: "{{ lookup('env', 'TERRAFORM_CONFIG') | default('{}') | from_yaml }}"
