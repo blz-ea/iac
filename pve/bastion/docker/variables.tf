@@ -19,4 +19,8 @@ locals {
   # Drone local variables
   drone_namespace       = var.bastion.docker.drone
   drone_container_name  = lookup(local.drone_namespace, "name", "drone_container")
+  
+  # Registry local variables
+  registry_namespace       = var.bastion.docker.registry
+  registry_container_name = lookup(local.registry_namespace, "name", "registry_container")
 }

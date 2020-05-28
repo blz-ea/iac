@@ -25,13 +25,14 @@ module "traefik" {
   
   labels = [
     # Default Auth
-    "traefik.http.middlewares.default-auth.digestauth.users=${local.default_auth}",
+    #"traefik.http.middlewares.default-auth.digestauth.users=${local.default_auth}",
+    "traefik.http.middlewares.default-basic-auth.basicauth.users=${local.default_auth}",
     # Dashboard route
     "traefik.http.routers.${local.traefik_container_name}.entryPoints=https",
     "traefik.http.routers.${local.traefik_container_name}.rule=Host(`${local.traefik_namespace.dashboard_hostname}`)",
     "traefik.http.routers.${local.traefik_container_name}.tls.certResolver=cloudflare",
     "traefik.http.routers.${local.traefik_container_name}.service=api@internal",
-    "traefik.http.routers.${local.traefik_container_name}.middlewares=default-auth"
+    "traefik.http.routers.${local.traefik_container_name}.middlewares=default-basic-auth",
   ]
 
   env = [
