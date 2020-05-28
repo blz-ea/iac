@@ -1,0 +1,20 @@
+---
+doh_installation_path: /var/lib/dns-over-https
+
+# Client Settings
+doh_client_listen_ports: [":5353"]
+doh_client_bootstrap_servers:
+  - "1.1.1.1:53"
+  - "1.0.0.1:53"
+doh_client_no_ecs: !!str false
+doh_client_upstream_selector: "random"
+doh_client_upstream_servers:
+  - { url: "https://cloudflare-dns.com/dns-query", weight: 10 }
+  - { url: "https://9.9.9.9/dns-query", weight: 1 }
+
+# Server Settings
+doh_server_listen_ports: [":8053"]
+doh_server_upstream_servers:
+  - "udp:127.0.0.1:53"
+  - "udp:1.1.1.1:53"
+  - "udp:1.0.0.1:53"

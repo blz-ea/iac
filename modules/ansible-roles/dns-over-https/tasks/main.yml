@@ -1,0 +1,78 @@
+---
+- name: Installing Dns-Over-Https
+  become: yes
+  block:
+    - name: Install package
+      package:
+        name: ["git", "make"]
+        state: latest
+      tags:
+        - packages
+
+    - name: Check if go installed
+      shell: "bash -ilc 'which go'"
+      register: go_installation
+      ignore_errors: true
+      tags:
+        - golang
+
+    - name: Install Go
+      include_role:
+        name: golang
+        apply:
+          tags:
+            - always
+      when: go_installation.rc != 0
+      tags:
+        - golang
+
+    - name: Create working directory
+      file:
+        dest: "{{ doh_installation_path }}"
+        state: directory
+
+    - name: Clone repository
+      git:
+        force: true
+        repo: https://github.com/m13253/dns-over-https.git
+        dest: "{{ doh_installation_path }}"
+
+    - name: Run 'all' target
+      shell: "bash -ilc 'make'"
+      args:
+        chdir: "{{ doh_installation_path }}"
+
+    - name: Run 'install' target
+      shell: "bash -ilc 'make install'"
+      args:
+        chdir: "{{ doh_installation_path }}"
+
+    - name: Create DoH Client Configuration file
+      template:
+        src: doh-client.conf.j2
+        dest: /etc/dns-over-https/doh-client.conf
+
+    - name: Create DoH Server Configuration file
+      template:
+        src: doh-server.conf.j2
+        dest: /etc/dns-over-https/doh-server.conf
+
+    - name: Make sure DoH Client.service is enabled
+      systemd:
+        name: doh-client
+        enabled: yes
+
+    - name: Restart  DoH Client.service
+      systemd:
+        name: doh-client
+        state: restarted
+
+    - name: Make sure DoH Server.service is enabled
+      systemd:
+        name: doh-server
+        enabled: yes
+
+    - name: Restart  DoH Server.service
+      systemd:
+        name: doh-server
+        state: restarted
