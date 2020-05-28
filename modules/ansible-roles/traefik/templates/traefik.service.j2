@@ -7,8 +7,11 @@ AssertPathExists={{ installation_path }}
 
 [Service]
 ; Required environmental variables
-Environment="CLOUDFLARE_EMAIL={{ certificate_resolver_cloudflare_email }}"
-Environment="CLOUDFLARE_API_KEY={{ certificate_resolver_cloudflare_api_key }}"
+
+{% for env in traefik_environment %}
+Environment="{{ env }}"
+{% endfor %}
+
 ; Make /usr, /boot, /etc and possibly some more folders read-only
 ProtectSystem=full
 ReadWritePaths={{ installation_path }}
@@ -31,7 +34,7 @@ CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
 
-ExecStart={{ installation_path }}/traefik --configFile {{ installation_path }}/config.yml
+ExecStart={{ installation_path }}/traefik {{ traefik_cli_options | join(" ") }}
 
 [Install]
 WantedBy=multi-user.target
