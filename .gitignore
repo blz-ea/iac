@@ -8,7 +8,7 @@ keys/*
 
 packer_cache
 vars/*
-!vars/default.yml
+!vars/default*.yml
 
 # Local .terraform directories
 **/.terraform/*
@@ -43,3 +43,4 @@ override.tf.json
 inventory/*
 !inventory/lab
 .ansible.state
+.packer-*
