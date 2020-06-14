@@ -1,46 +1,48 @@
 locals {
-	template = local.workspace.packer.ubuntu.bionic
+	template 			= local.workspace.packer.ubuntu.bionic
+	proxmox_cfg 	= local.workspace.proxmox.nodes.pve.api
+	proxmox_node	= local.workspace.proxmox.nodes.pve
 }
 source "proxmox" "ubuntu" {
-	proxmox_url =  "${local.workspace.proxmox.nodes.pve.auth.api_url}/api2/json"
-	insecure_skip_tls_verify = local.workspace.proxmox.nodes.pve.auth.tls_insecure
-	username = local.workspace.proxmox.nodes.pve.auth.username
-	password = local.workspace.proxmox.nodes.pve.auth.password
-	node = local.workspace.proxmox.nodes.pve.name
+	proxmox_url 							=  "${local.proxmox_cfg.url}/api2/json"
+	insecure_skip_tls_verify 	= local.proxmox_cfg.tls_insecure
+	username 									= local.proxmox_cfg.username
+	password 									= local.proxmox_cfg.password
+	node 											= local.proxmox_node.name
 	
 	vm_name = local.template.name
 	vm_id = local.template.id
 	
-	memory = local.template.memory
+	memory 	= local.template.memory
 	sockets = local.template.sockets
-	cores = local.template.cores
-	os = local.template.os
+	cores 	= local.template.cores
+	os 			= local.template.os
 
 	network_adapters {
-		model = "virtio"
-		bridge = "vmbr0"
+		model 	= "virtio"
+		bridge 	= "vmbr0"
 	}
 
-	qemu_agent = true
-	scsi_controller = local.template.scsi_controller
+	qemu_agent 				= true
+	scsi_controller 	= local.template.scsi_controller
 
 	disks {
-		type = local.template.disk[0].type
-		disk_size = local.template.disk[0].disk_size
-		storage_pool = local.template.disk[0].storage_pool
+		type						= local.template.disk[0].type
+		disk_size 			= local.template.disk[0].disk_size
+		storage_pool 		= local.template.disk[0].storage_pool
 		storage_pool_type = local.template.disk[0].storage_pool_type
-		format = local.template.disk[0].format
+		format 					= local.template.disk[0].format
 	}
 
-	ssh_username = local.workspace.default_user.name
-	ssh_password = local.workspace.default_user.password
-	ssh_timeout= "30m"
+	ssh_username 		= local.workspace.default_user.name
+	ssh_password 		= local.workspace.default_user.password
+	ssh_timeout			= "30m"
 	
-	iso_file = local.template.iso_file
+	iso_file 				= local.template.iso_file
 	
-	template_name = local.template.name
+	template_name 	= local.template.name
 	template_description = local.template.description
-	unmount_iso = true
+	unmount_iso 		= true
    
 	
 	http_directory = "./templates/ubuntu-18.04/http"

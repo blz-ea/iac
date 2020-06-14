@@ -40,5 +40,10 @@ module "traefik" {
     "CLOUDFLARE_API_KEY=${var.cloudflare.api_key}",
   ]
 
+  networks_advanced = [
+    "bms_network",
+    "bridge",
+  ]
+
   source = "../../../modules/terraform/docker/traefik"
 }

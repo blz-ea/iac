@@ -3,25 +3,22 @@ terraform {
 }
 
 locals {
+	# Variables location folder
 	vars_folder_path = abspath("../vars/")
 }
 
 # Import varaibles
+# Variable file based on current workspace will be preloaded
+# If not found file with deault variables will be used
 module "vars" {
 	source = "../modules/terraform/vars"
 	# Folder containing variables
 	vars_folder = local.vars_folder_path
-
-	# Map of variables, variables will be loaded depending on Terraform's workspace
-	# Variables will be merged with default variables
-	# If not specified default workspace and default set of variables will be used
-	input_var_files = {
-		# Workspace name = "file.yml"
-		prod = "prod.yml",
-	}
+	default_vars_file = "default_proxmox.yml"
 }
 
 locals {
+	workspace  = module.vars.workspace
   proxmox    = module.vars.workspace.proxmox
   user       = module.vars.workspace.default_user
   domain     = module.vars.workspace.domain
@@ -29,6 +26,7 @@ locals {
   lxc        = module.vars.workspace.lxc
 	cloudflare = module.vars.workspace.cloudflare
 	bastion 	 = module.vars.workspace.bastion
+	packer		 = module.vars.workspace.packer 
 }
 
 # Provision File Resources
@@ -38,6 +36,17 @@ module "proxmox_file" {
 	}
 
 	source 		= "./file"
+}
+
+# Provision Packer Templates
+module "proxmox_templates" {
+	providers = {
+		proxmox = proxmox
+	}
+
+	templates = local.packer
+
+	source 		= "./templates"
 }
 
 # Provision DNS Resources
@@ -66,6 +75,7 @@ module "proxmox_lxc" {
 		consul 		= consul
 	}
 
+	workspace		= local.workspace
 	user 				= local.user
 	proxmox 		= local.proxmox
 	lxc 				= local.lxc
@@ -74,11 +84,27 @@ module "proxmox_lxc" {
 	vztmpl 			= module.proxmox_file.vztmpl
 	cloudflare  = local.cloudflare
 
-	dependencies = [
-		# module.dns.bind_server_id
-	]
+	dependencies = []
 
 	source = "./lxc"
+}
+
+# External configuration that needs to be exposed via discovery services
+# E.g. internal web uis
+module "discovery" {
+	providers = {
+		consul 		= consul
+	}
+
+	consul 			= local.consul
+	proxmox			= local.proxmox
+
+	dependencies = [
+		# Resource is dependant on Consul Server LXC Container
+		module.proxmox_lxc.lxc_consul.provisioner_id
+	]
+
+	source = "./discovery"
 }
 
 # Provision Proxmox Virtual Machines
@@ -90,8 +116,26 @@ module "proxmox_vm" {
 	user 		= local.user
 	domain 	= local.domain
 	iso 		= module.proxmox_file.iso
+
+	dependencies = []
 	
 	source = "./vm"
+}
+
+# Providion Bastion Host
+# Digital Ocean based Bastion Host
+module "bastion" {
+	
+	providers = {
+		digitalocean 	= digitalocean
+		cloudflare 		= cloudflare
+	}
+
+	cloudflare 	= local.cloudflare
+	bastion 		= local.bastion
+	user 				= local.user
+
+	source 			= "./bastion"
 }
 
 # Provision Proxmox pools
@@ -99,6 +143,7 @@ module "proxmox_pool" {
 	providers = {
 		proxmox = proxmox
 	}
+
 	source = "./pool"
 }
 
@@ -110,16 +155,4 @@ module "proxmox_time" {
 	
 	proxmox = local.proxmox
 	source 	= "./time"
-}
-
-# Providion Bastion Host
-module "bastion" {
-	providers = {
-		digitalocean 	= digitalocean
-		cloudflare 		= cloudflare
-	}
-	cloudflare 	= local.cloudflare
-	bastion 		= local.bastion
-	user 				= local.user
-	source 			= "./bastion"
 }

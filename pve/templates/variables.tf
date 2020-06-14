@@ -1,0 +1,3 @@
+variable "templates" {
+  type = any
+}

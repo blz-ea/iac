@@ -44,12 +44,3 @@ resource "proxmox_virtual_environment_file" "ubuntu-19-10-server-amd64" {
         path = "http://cdimage.ubuntu.com/releases/eoan/release/ubuntu-19.10-server-amd64.iso"
     }
 }
-
-output "iso" {
-    value = {
-        ubuntu-18-04-4-server-amd64 = proxmox_virtual_environment_file.ubuntu-18-04-4-server-amd64,
-        ubuntu-19-10-server-amd64 = proxmox_virtual_environment_file.ubuntu-19-10-server-amd64,
-        centos-7-x86-64-minimal-1908 = proxmox_virtual_environment_file.centos-7-x86-64-minimal-1908
-        virtio-win = proxmox_virtual_environment_file.virtio-win
-    }
-}

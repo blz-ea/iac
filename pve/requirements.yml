@@ -3,11 +3,9 @@
   connection: local
   gather_facts: no
   pre_tasks:
-    - name: Include variables
-      vars:
-        file: prod.yml
+    - name: Run Pre-tasks
       include_role:
-        name: vars
+        name: pre_tasks
       tags:
         - always
   tasks:
@@ -24,7 +22,7 @@
         - packer
 
     - name: Check if go installed
-      shell: "bash -ilc 'make'"
+      shell: "bash -ilc 'which go'"
       register: go_installation
       ignore_errors: true
       tags:

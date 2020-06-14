@@ -26,6 +26,10 @@ variable "lxc" {
   type = any
 }
 
+variable "workspace" {
+  type = any
+}
+
 variable "dependencies" {
   type = any
 }

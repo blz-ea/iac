@@ -24,15 +24,15 @@ module "lxc_traefik" {
     "--entryPoints.https.address=:443",
 
 		# Consul Catalog provider for dynamic configuration
-		"--providers.consulCatalog=true",
-		"--providers.consulCatalog.exposedByDefault=false",
-		"--providers.consulCatalog.prefix=traefik",
-		"--providers.consulCatalog.endpoint.scheme=http",
-		"--providers.consulCatalog.endpoint.tls.insecureSkipVerify=true",
-		"--providers.consulCatalog.endpoint.datacenter=devset.app",
-		"--providers.consulCatalog.endpoint.address=http://127.0.0.1:8500",
-		# "--providers.consulCatalog.endpoint.httpAuth.username=username",
-		# "--providers.consulCatalog.endpoint.httpAuth.password=password",
+		"--providers.consulcatalog=true",
+		"--providers.consulcatalog.exposedByDefault=false",
+		"--providers.consulcatalog.prefix=traefik",
+		"--providers.consulcatalog.endpoint.scheme=${var.consul.default.scheme}",
+		"--providers.consulcatalog.endpoint.tls.insecureSkipVerify=true",
+		"--providers.consulcatalog.endpoint.datacenter=${var.consul.default.data_center}",
+		"--providers.consulcatalog.endpoint.address=${var.consul.default.host}:${var.consul.default.port}",
+		# "--providers.consulcatalog.endpoint.httpAuth.username=username",
+		# "--providers.consulcatalog.endpoint.httpAuth.password=password",
 
 		# Consul KV Store provider for dynamic configuration
 		"--providers.consul=true",
@@ -40,16 +40,26 @@ module "lxc_traefik" {
 		"--providers.consul.tls.insecureSkipVerify=true",
 		# "--providers.consul.username=username",
 		# "--providers.consul.password=password",
-		"--providers.consul.endpoints=http://127.0.0.1:8500",
+		"--providers.consul.endpoints=${var.consul.default.scheme}://${var.consul.default.host}:${var.consul.default.port}",
 
     "--certificatesResolvers.cloudflare.acme.email=${var.cloudflare.email}",
-    "--certificatesResolvers.cloudflare.acme.storage=/letsencrypt/acme.json",
+    "--certificatesResolvers.cloudflare.acme.storage=/opt/traefik/acme.json",
     "--certificatesResolvers.cloudflare.acme.dnsChallenge.provider=cloudflare",
     "--certificatesResolvers.cloudflare.acme.dnsChallenge.delayBeforeCheck=30",
     "--certificatesResolvers.cloudflare.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53",
 	]
 
+	dynamic_config = [
+		# TODO: Authentication
+		# [WIP] `Authelia` will be an authentication service for Traefik
+		"traefik.enable=true",
+		"traefik.http.routers.${var.lxc.traefik.container_name}.entryPoints=https",
+	  "traefik.http.routers.${var.lxc.traefik.container_name}.rule=Host(`${var.lxc.traefik.hostname}`)",
+		"traefik.http.routers.${var.lxc.traefik.container_name}.tls.certResolver=cloudflare",
+	  "traefik.http.routers.${var.lxc.traefik.container_name}.service=api@internal",
+	]
+
 	dependencies = [
-		module.lxc_consul.id
+		module.lxc_consul.provisioner_id
 	]
 }

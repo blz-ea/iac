@@ -1,3 +1,6 @@
+start:
+	@ansible-playbook ./requirements.yml
+
 prep:
 
 init: prep ## Initialize

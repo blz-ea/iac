@@ -26,3 +26,13 @@ provider "cloudflare" {
 provider "digitalocean" {
   token = module.vars.workspace.digital_ocean.api_key
 }
+
+provider "dns" {
+  update {
+    # Last bit is a hacky dependency
+    server        = "${module.proxmox_lxc.lxc_bind.ip_address}${replace(module.proxmox_lxc.lxc_bind.provisioner_id, "/.*/", "")}"
+    key_name      = local.workspace.bind.bind_dns_keys[0].name
+    key_algorithm = local.workspace.bind.bind_dns_keys[0].algorithm
+    key_secret    = local.workspace.bind.bind_dns_keys[0].secret
+  }
+}
