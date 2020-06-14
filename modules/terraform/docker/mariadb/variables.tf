@@ -31,3 +31,8 @@ variable "image_version" {
   type = string
   default = "latest"
 }
+
+variable "networks_advanced" {
+  type = any
+  default = []
+}

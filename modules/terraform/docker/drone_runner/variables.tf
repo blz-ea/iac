@@ -16,3 +16,8 @@ variable "container_name" {
   type = string
   default = "drone_runner_container"
 }
+
+variable "networks_advanced" {
+  type = any
+  default = []
+}

@@ -18,6 +18,12 @@ module "mariadb" {
   labels    = []
   links     = []
   version   = "latest"
+
+  # Join specific network
+  networks_advanced = [
+    "bridge",
+  ]
+
   source    = "../../../modules/terraform/docker/mariadb"
 }
 ```

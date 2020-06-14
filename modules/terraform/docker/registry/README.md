@@ -13,6 +13,11 @@ module "registry" {
     "5000:5000"
   ]
 
+  # Join specific network
+  networks_advanced = [
+    "bridge",
+  ]
+
   source = "../../../modules/terraform/docker/registry"
 }
 ```

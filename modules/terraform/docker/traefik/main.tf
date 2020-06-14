@@ -98,6 +98,13 @@ resource "docker_container" "container" {
     }
   }
 
+  dynamic "networks_advanced" {
+    for_each = var.networks_advanced
+    content {
+      name = networks_advanced.value
+    }
+  }
+
   depends_on = [
     null_resource.depends_on
   ]

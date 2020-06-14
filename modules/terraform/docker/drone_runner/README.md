@@ -22,6 +22,11 @@ module "<name>" {
     "DRONE_MEMORY_SWAP_LIMIT=500000000",
   ]
 
+  # Join specific network
+  networks_advanced = [
+    "bridge",
+  ]
+
   source = "../../../modules/terraform/docker/drone_runner"
 }
 ```

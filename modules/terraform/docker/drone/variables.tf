@@ -27,4 +27,7 @@ variable "container_name" {
   default = "drone_container"
 }
 
-
+variable "networks_advanced" {
+  type = any
+  default = []
+}
