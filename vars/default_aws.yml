@@ -1,0 +1,58 @@
+---
+# AWS Default Configuration
+name: default
+
+aws_east: {
+  region: us-east-1,
+  
+  access_key: ...,
+  secret_key: ...,
+  
+  route53: {
+    zones: {
+      # Route 53 Hosted Zone
+      primary: {
+        name: example.com,
+        alternative_names: [
+          "*.exidia.com",
+        ],
+      },
+    },
+  },
+
+  ssh_keys: {
+    default: {
+      name: default_auth,
+      path: ~/.ssh/id_rsa.pub
+    }
+  },
+  
+  vpc: {
+    default: {
+      name: default,
+      cidr_block: 10.10.0.0/16,
+
+      azs: [
+       us-east-1a,
+       us-east-1b,
+      ],
+
+      public: [
+        10.10.1.0/24,
+        10.10.2.0/24,
+      ],
+
+      private: [
+        10.10.11.0/24,
+        10.10.12.0/24,
+      ],
+    },
+  },
+
+  ec2: {
+    web: {
+      instance_type: t2.micro
+    }
+  }
+
+}
