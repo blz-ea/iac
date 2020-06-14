@@ -1,0 +1,22 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - name: Run Pre-tasks
+      include_role:
+        name: pre_tasks
+      tags:
+        - always
+  tasks:
+    - name: Install Terraform
+      include_role:
+        name: terraform
+      tags:
+        - terraform
+    
+    - name: Install Packer
+      include_role:
+        name: packer
+      tags:
+        - packer

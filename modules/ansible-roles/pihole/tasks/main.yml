@@ -1,13 +1,3 @@
-- name: Update and upgrade apt packages
-  become: true
-  apt:
-    upgrade: "yes"
-    update_cache: "yes"
-    cache_valid_time: 86400 # One day
-  tags:
-    - pihole
-    - packages
-
 - name: Create etc directory
   become: yes
   file:
@@ -25,23 +15,30 @@
   tags:
     - pihole
 
+- name: Check if PiHole is installed
+  stat:
+    path: /usr/local/bin/pihole
+  register: pihole_stat
+
 - name: Setup Pihole
   become: yes
   shell: "wget -O - https://install.pi-hole.net | bash /dev/stdin --unattended"
   register: setup_result
+  when: not pihole_stat.stat.exists
   tags:
     - setup
     - pihole
   
 - debug:
     msg: "{{ setup_result }}"
+  when: not pihole_stat.stat.exists
   tags:
     - setup
     - pihole
 
 - name: Set webui password
   become: yes
-  command: "pihole -a -p {{ webui_password }}"
+  command: "/usr/local/bin/pihole -a -p {{ webui_password }}"
   register: pihole_set_password
   when: webui_password != ""
   tags:
@@ -54,6 +51,10 @@
   tags:
     - password
     - pihole
+
+- name: Remove all block lists
+  shell: "sqlite3 /etc/pihole/gravity.db \"DELETE FROM adlist \""
+  ignore_errors: yes
 
 - name: Add extra block lists
   shell: "sqlite3 /etc/pihole/gravity.db \"INSERT INTO adlist (address,enabled) VALUES ('{{ item.url }}', {{ item.enabled | ternary('1', '0') }})\""
@@ -78,3 +79,14 @@
     path: /etc/hosts
     regexp: '^127\.0\.1\.1'
     state: absent
+
+- name: Restart dns resolver
+  become: yes
+  command: "/usr/local/bin/pihole restartdns"
+  tags:
+    - pihole
+
+- name: Restart pihole-FTL
+  systemd:
+    name: pihole-FTL
+    state: restarted

@@ -1,0 +1,47 @@
+---
+- hosts: all
+  gather_facts: no
+  pre_tasks:
+    - name: Run Pre-tasks
+      include_role:
+        name: pre_tasks
+      tags:
+        - always
+  tasks:
+    - name: Install `pip`
+      become: yes
+      package:
+        name: python3-pip
+        state: present
+      tags:
+        - pip
+    
+    - name: Installing python modules
+      become: true
+      pip:
+        name: 
+          - python-consul
+          - requests
+      tags:
+        - pip
+
+    - name: Wait for container
+      wait_for:
+        path: /sys/fs/cgroup/pids/lxc/{{ terraform_config.container_id }}/pids.events
+
+    - name: Get Container IP Address
+      command: "lxc-info -n {{ terraform_config.container_id }} -iH"
+      register: container_info
+    
+    - debug:
+        msg: "{{ container_info }}"
+          
+    - name: Put ip container ip address to Consul KV store
+      consul_kv:
+        host: "{{ terraform_config.consul.default.host }}"
+        port: "{{ terraform_config.consul.default.port }}"
+        scheme: "{{ terraform_config.consul.default.scheme }}"
+        key: proxmox/{{ terraform_config.pve_node }}/lxc/{{ terraform_config.container_id }}/ipv4_address/{{ item.0 }}
+        value: "{{ item.1 }}"
+        state: present
+      with_indexed_items: "{{ container_info.stdout_lines }}"

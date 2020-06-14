@@ -1,0 +1,19 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  pre_tasks:
+  - name: Run Pre-tasks
+    include_role:
+      name: pre_tasks
+    tags:
+      - always
+  tasks:
+    - name: Install Consul Agent
+      include_role:
+        name: consul
+      vars:
+        encrypt_key: "{{ terraform_config.consul.default.encrypt_key }}"
+        domain_name: "{{ terraform_config.consul.default.domain_name }}"
+        datacenter_name: "{{ terraform_config.consul.default.data_center }}"
+        start_join: "{{ terraform_config.consul[terraform_config.consul.default.data_center].servers | map(attribute='host') | list }}"

@@ -1,0 +1,102 @@
+---
+- hosts: all
+  gather_facts: no
+  pre_tasks:
+    - name: Run Pre-tasks
+      include_role:
+        name: pre_tasks
+      tags:
+        - always
+  tasks:
+    - block:
+      - name: Setting container name variable
+        set_fact:
+          container_name: "{{ terraform_config.container_name }}"
+
+      - name: Setting container id variable
+        set_fact:
+          container_id: "{{ terraform_config.container_id }}"
+
+      - name: Setting container features variable
+        set_fact:
+          container_features: "{{ terraform_config.container_features }}"
+        when: terraform_config.container_features is defined
+      
+      - name: Setting container mounts variable
+        set_fact:
+          container_mounts: "{{ terraform_config.container_mounts }}"
+        when: terraform_config.container_mounts is defined
+
+      - name: Setting low level lxc configuration variable
+        set_fact:
+          lxc_config: "{{ terraform_config.container_lxc_cfg }}"
+        when: terraform_config.container_lxc_cfg is defined
+      
+      - name: Setting host kernel modules variable
+        set_fact:
+          kernel_modules: "{{ terraform_config.host_kernel_modules }}"
+        when: terraform_config.host_kernel_modules is defined
+
+      - name: Add Kernel Modules to /etc/modules
+        lineinfile:
+          dest: /etc/modules
+          line: "{{ item }}"
+        with_items: "{{ kernel_modules }}"
+        when: kernel_modules is defined and (kernel_modules | length > 0)
+    
+      - name: Enable modules
+        command: "modprobe {{ item }}"
+        with_items: "{{ kernel_modules }}"
+        when: kernel_modules is defined and (kernel_modules | length > 0)
+
+      - name: Stop container
+        shell: "pct stop {{ container_id }} || true"
+
+      - name: Add extra configuration
+        command: "pct set {{ container_id }} --feature {{ container_features }}"
+        when: container_features is defined
+
+      - name: Remove low level lxc configuration from container
+        # For some reason `lineinfile` module didn't work
+        shell:
+          cmd: "sed -i '/^lxc./d' /etc/pve/lxc/{{ container_id }}.conf || true"
+          warn: false
+
+      - name: Add low level lxc configuration to container
+        # For some reason `lineinfile` module didn't work
+        shell:
+          cmd: 'grep -qF "{{ item }}" /etc/pve/lxc/{{ container_id }}.conf  || echo "{{ item }}" | tee --append /etc/pve/lxc/{{ container_id }}.conf'
+          warn: false
+        with_items: "{{ lxc_config }}"
+        when: lxc_config is defined
+
+      - name: Create external mount points
+        command: "pct set {{ container_id }} -mp{{ item.0 }} {{ item.1.split(':')[0] }},mp={{ item.1.split(':')[1] }}"
+        with_indexed_items: "{{ container_mounts }}"
+        when: container_mounts is defined and (container_mounts | length > 0)
+
+      - name: Remove mount points
+        # For some reason `lineinfile` module didn't work
+        shell:
+          cmd: "sed -i '/^mp[[:digit:]]/d' /etc/pve/lxc/{{ container_id }}.conf || true"
+          warn: false
+
+      - name: Create mount directory
+        file:
+          path: "{{ item.split(':')[0] }}"
+          owner: 100000
+          group: 100000
+          state: directory
+        with_items: "{{ container_mounts }}"
+        when: container_mounts is defined and (container_mounts | length > 0)
+
+      - name: Create external mount points
+        command: "pct set {{ container_id }} -mp{{ item.0 }} {{ item.1.split(':')[0] }},mp={{ item.1.split(':')[1] }}"
+        with_indexed_items: "{{ container_mounts }}"
+        when: container_mounts is defined and (container_mounts | length > 0)
+      
+      always:
+        - name: Start Container
+          command: "pct start {{ container_id }}"
+      
+      become: yes

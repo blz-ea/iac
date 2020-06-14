@@ -19,23 +19,6 @@
   pip:
     name: 
       - homeassistant
-      # - wheel
-      # - aiohttp
-      # - aiohttp_cors
-      # - sqlalchemy
-      # - home-assistant-frontend
-      # - hass_nabucasa
-      # - distro
-      # - defusedxml
-      # - zeroconf
-      # - ssdp
-      # - updater
-      # - zeroconf
-      # - requests==2.23.0
-      # - netdisco
-      # - pychromecast
-      # - mutagen
-      # - gtts_token
 
 - name: Link executable to /usr/bin
   become: yes

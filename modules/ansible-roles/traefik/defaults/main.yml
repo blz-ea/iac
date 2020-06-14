@@ -6,21 +6,3 @@ state: present
 
 traefik_environment: []
 traefik_cli_options: []
-
-#provider_file_directory: false
-#provider_consul: false
-# provider_consul_username:
-# provider_consul_password: 
-#provider_consul_root_key: traefik
-#provider_consul_endpoints:
-#  - { host: 127.0.0.1, port: 8500 }
-
-#provider_consul_catalog: false
-#provider_consul_catalog_prefix: traefik
-#provider_consul_catalog_expose_default: true
-# provider_consul_catalog_data_center:
-#provider_consul_catalog_endpoint: http://127.0.0.1:8500
-#provider_consul_catalog_scheme: http
-# provider_consul_catalog_http_username:
-# provider_consul_catalog_http_password:
-

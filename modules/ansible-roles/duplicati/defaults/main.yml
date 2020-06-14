@@ -1,4 +1,0 @@
----
-git_repo: https://api.github.com/repos/duplicati/duplicati
-git_repo_api: https://api.github.com/repos/duplicati/duplicati
-listen_address: 8200

@@ -19,6 +19,11 @@
     src: plexupdate.conf.j2
     dest: "{{ plexupdate_config_location }}"
 
+- name: Check if configuration already exists
+  stat:
+    path: "/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Preferences.xml"
+  register: plex_cfg
+
 - name: Install latest plex with plexupdate
   command: "{{ plexupdate_install_location }}/plexupdate.sh --config {{ plexupdate_config_location }}"
   environment:
@@ -40,36 +45,36 @@
     enabled: true
 
 - block:
-    - name: Install cron
-      package:
-        name: cronie
-        state: present
-      when: ansible_os_family == 'RedHat'
+  - name: Install cron
+    package:
+      name: cronie
+      state: present
+    when: ansible_os_family == 'RedHat'
 
-    - name: Create cron config
-      template:
-        src: plexupdate.cron.conf.j2
-        dest: /etc/plexupdate.cron.conf
+  - name: Create cron config
+    template:
+      src: plexupdate.cron.conf.j2
+      dest: /etc/plexupdate.cron.conf
 
-    - name: Create cron job
-      file:
-        src: "{{ plexupdate_install_location }}/extras/cronwrapper"
-        dest: "/etc/cron.{{ plexupdate_interval }}/plexupdate"
-        state: link
+  - name: Create cron job
+    file:
+      src: "{{ plexupdate_install_location }}/extras/cronwrapper"
+      dest: "/etc/cron.{{ plexupdate_interval }}/plexupdate"
+      state: link
   when: ansible_os_family != 'Alpine'
 
 - block:
-    - name: Start and enable crond
-      service:
-        name: crond
-        state: started
-        enabled: true
+  - name: Start and enable crond
+    service:
+      name: crond
+      state: started
+      enabled: true
 
-    - name: Create cron job
-      file:
-        src: "{{ plexupdate_install_location }}/extras/cronwrapper"
-        dest: "/etc/periodic/{{ plexupdate_interval }}"
-        state: link
+  - name: Create cron job
+    file:
+      src: "{{ plexupdate_install_location }}/extras/cronwrapper"
+      dest: "/etc/periodic/{{ plexupdate_interval }}"
+      state: link
   when: ansible_os_family == 'Alpine'
 
 - name: Claim Plex Server
@@ -94,7 +99,7 @@
     register: plex_server_claimed
     ignore_errors: true
   
-  when: plex_username and plex_password
+  when: plex_username and plex_password and (not plex_cfg.stat.exists)
 
 - name: Start Plex server
   service:
@@ -117,9 +122,6 @@
         'user[login]': "{{ plex_username }}"
         'user[password]': "{{ plex_password }}"
     register: plex_auth
-  
-  - debug:
-      msg: "{{ plex_auth }}"
 
   - name: Set 'plex_token' variable
     set_fact:
@@ -139,12 +141,9 @@
 
   - set_fact:
       url_str: "{{ (url_str | default('')) + ('&' if (index > 0) else '') + (item.key+'='+item.value| urlencode) }}"
-    loop: "{{ plex_configuration | dict2items }}"
+    loop: "{{ plex_configuration | default({}) | dict2items }}"
     loop_control:
       index_var: index
-
-  - debug:
-      msg: "{{ url_str }}"
 
   - name: Set Configuration
     uri:
@@ -156,7 +155,7 @@
         X-Plex-Version: "0.1"
         X-Plex-Token: "{{ plex_token }}"
     when: plex_token is defined
-  
+
   - name: Refresh Reachability
     uri:
       url: http://localhost:32400/myplex/refreshReachability
@@ -167,5 +166,5 @@
         X-Plex-Version: "0.1"
         X-Plex-Token: "{{ plex_token }}"
     when: plex_token is defined
-    
-  when: plex_server_claimed and plex_username and plex_password 
+
+  when: plex_server_claimed and plex_username and plex_password and (not plex_cfg.stat.exists)

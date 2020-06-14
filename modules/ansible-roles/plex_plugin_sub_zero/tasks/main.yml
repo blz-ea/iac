@@ -43,11 +43,13 @@
       status_code: 200
       return_content: true
     register: subzero_latest_version
+  
+  - debug:
+      msg: "{{ subzero_latest_version.json }}"
 
   - name: Compare installed Sub-Zero Plugin version with latest one
     set_fact:
-      subzero_outdated: "{{ (subzero_latest_version.json.tag_name is failed) or
-        ((subzero_latest_version.json.tag_name is success) and (subzero_previously_installed_version is version(subzero_latest_version.json.tag_name, '<'))) }}"
+      subzero_outdated: "{{ subzero_previously_installed_version is version(subzero_latest_version.json.tag_name, '<') }}"
 
   when: subzero_bundle.stat.exists
 

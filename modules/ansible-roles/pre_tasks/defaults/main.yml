@@ -1,4 +1,4 @@
 ---
-pre_task_delay: 10
+pre_task_delay: 5
 pre_task_timeout: 300
 pre_task_gather: all

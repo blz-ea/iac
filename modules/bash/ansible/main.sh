@@ -1,5 +1,5 @@
 #!/bin/sh
-# Installs ansible
+# Install ansible
 # Reference: https://github.com/neillturner/omnibus-ansible/blob/master/ansible_install.sh
 
 if [ "$1" = "-v" ]; then
