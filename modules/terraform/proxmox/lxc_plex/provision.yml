@@ -3,60 +3,49 @@
   gather_facts: no
   become: yes
   pre_tasks:
-    - name: Include variables
-      vars:
-        file: prod.yml
+    - name: Run Pre-tasks
       include_role:
-        name: vars
+        name: pre_tasks
       tags:
         - always
   tasks:
-    - name: Wait for target to become reachable
-      wait_for_connection:
-        delay: 10
-        timeout: 300
+    - block:
+      - name: Update and upgrade apt packages
+        become: true
+        apt:
+          upgrade: "yes"
+          update_cache: "yes"
+          cache_valid_time: 86400 # One day
 
-    - name: Update and upgrade apt packages
-      become: true
-      apt:
-        upgrade: "yes"
-        update_cache: "yes"
-        cache_valid_time: 86400 # One day
+      - name: Install Plex Media Server
+        include_role:
+          name: plex
+        vars:
+          plex_username: "{{ terraform_config.plex_username }}"
+          plex_password: "{{ terraform_config.plex_password }}"
+          plex_server_name: "{{ terraform_config.plex_server_name }}"
+      
+      - name: Stop Plex server
+        service:
+          name: plexmediaserver
+          state: stopped
 
-    - name: Install Plex Media Server
-      include_role:
-        name: plex
-      vars:
-        plex_username: "{{ lxc.plex.plex_username }}"
-        plex_password: "{{ lxc.plex.plex_password }}"
-        plex_server_name: "{{ lxc.plex.plex_server_name }}"
-    - name: Stop Plex server
-      service:
-        name: plexmediaserver
-        state: stopped
+      - name: Install Sub Zero plugin
+        include_role:
+          name: plex_plugin_sub_zero
 
-    - name: Install Sub Zero plugin
-      include_role:
-        name: plex_plugin_sub_zero
+      - name: Install Trakttv plugin
+        include_role:
+          name: plex_plugin_trakttv
 
-    - name: Install Trakttv plugin
-      include_role:
-        name: plex_plugin_trakttv
-
-    - name: Install Webtools plugin
-      include_role:
-        name: plex_plugin_webtools
-
-    - name: Start Plex server
-      service:
-        name: plexmediaserver
-        state: started
-
-    - name: Install Consul Agent
-      include_role:
-        name: consul
-      vars:
-        encrypt_key: "{{ consul.default.encrypt_key }}"
-        domain_name: "{{ domain.name }}"
-        datacenter_name: "{{ consul.default.data_center }}"
-        start_join: "{{ consul[consul.default.data_center].servers | map(attribute='host') | list }}"
+      - name: Install Webtools plugin
+        include_role:
+          name: plex_plugin_webtools
+    
+      always:
+        - name: Start Plex server
+          service:
+            name: plexmediaserver
+            state: started
+      
+      become: yes

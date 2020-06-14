@@ -17,6 +17,20 @@ locals {
     "--metrics.prometheus.addEntryPointsLabels=true",
     "--metrics.prometheus.addServicesLabels=true",
     "--metrics.prometheus.manualRouting=true",
+
+		"--entryPoints.http.address=:80",
+    "--entryPoints.https.address=:443",
+
+		# Consul Catalog provider for dynamic configuration
+		"--providers.consulcatalog=true",
+		"--providers.consulcatalog.exposedByDefault=false",
+		"--providers.consulcatalog.prefix=traefik",
+		"--providers.consulcatalog.endpoint.scheme=${var.consul.default.scheme}",
+		"--providers.consulcatalog.endpoint.tls.insecureSkipVerify=true",
+		"--providers.consulcatalog.endpoint.datacenter=${var.consul.default.data_center}",
+		"--providers.consulcatalog.endpoint.address=${var.consul.default.host}:${var.consul.default.port}",
+		"--providers.consulcatalog.endpoint.httpAuth.username=username",
+		"--providers.consulcatalog.endpoint.httpAuth.password=password",
 	]
 }
 
@@ -71,10 +85,15 @@ resource "proxmox_virtual_environment_container" "container" {
 
 	# Add Container's IP address to KV store
 	provisioner "local-exec" {
-		command = "ansible-playbook -i ${local.node_hostname}, ../modules/ansible-roles/lxc_register/tasks/main.yml -e 'ansible_user=${local.node_username}' -e 'pve_node=${local.node_name}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
+		command = "ansible-playbook -i ${local.node_hostname}, ../modules/ansible-roles/proxmox_lxc_register/tasks/main.yml -e 'ansible_user=${local.node_username}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True",
+			TERRAFORM_CONFIG 			= yamlencode({
+				pve_node 			= var.data.node_name
+				consul			  = var.consul
+				container_id  = proxmox_virtual_environment_container.container.id
+			}),
 		}
 	}
 
@@ -95,37 +114,85 @@ data "consul_keys" "container" {
 
 }
 
-resource "null_resource" "provision" {
-
-  triggers = {
-    container_id = proxmox_virtual_environment_container.container.id
-  }
-
-	# Append Additional Configuration to Container via SSH
+# Add additional configuration to container from Proxmox node
+resource "null_resource" "append" {
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${local.node_hostname},' ${path.module}/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
+		command = "ansible-playbook -i '${local.node_hostname},' ../modules/ansible-roles/proxmox_lxc_config/tasks/main.yml -e 'ansible_user=${local.node_username}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
+			ANSIBLE_FORCE_COLOR = "True",
+			TERRAFORM_CONFIG 			= yamlencode({
+				container_name 					= local.container_name
+				container_id  					= proxmox_virtual_environment_container.container.id
+				container_mounts				= lookup(var.data, "mounts", [])
+			}),
 		}
 	}
 
-	# Provision Container
-	provisioner "local-exec" {
-		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
-		environment = {
-			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
-			TERRAFORM_CONFIG = yamlencode({
-				traefik_cli_options = distinct(concat(var.cli_options, local.default_cli_options))
-				traefik_environment = var.environment
-			})
-		}
+	triggers = {
+		mounts = yamlencode(lookup(var.data, "mounts", []))
 	}
 	
 	depends_on = [
 		data.consul_keys.container,
 		proxmox_virtual_environment_container.container
+	]
+
+}
+
+# Provision Container
+resource "null_resource" "provisioner" {
+	provisioner "local-exec" {
+		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		environment = {
+			ANSIBLE_CONFIG 				= "../ansible.cfg",
+			ANSIBLE_FORCE_COLOR 	= "True"
+			TERRAFORM_CONFIG 			= yamlencode({
+				traefik_cli_options = distinct(concat(var.cli_options, local.default_cli_options))
+				traefik_environment = var.environment
+			})
+		}
+	}
+
+	triggers = {
+    container_id 					= proxmox_virtual_environment_container.container.id
+		traefik_cli_options 	= yamlencode(distinct(concat(var.cli_options, local.default_cli_options)))
+		traefik_environment		= yamlencode(var.environment)
+		provisioner						= sha1(file("${path.module}/provision.yml"))
+  }
+	
+	depends_on = [
+		null_resource.append
+	]
+
+}
+
+# Provision Container - Consul Agent
+resource "null_resource" "consul_agent" {
+		
+	provisioner "local-exec" {
+		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ../modules/ansible-roles/consul_agent/tasks/main.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		environment = {
+			ANSIBLE_CONFIG 				= "../ansible.cfg",
+			ANSIBLE_FORCE_COLOR 	= "True",
+			TERRAFORM_CONFIG 			= yamlencode({
+				consul = var.consul
+			})
+		}
+	}
+
+	provisioner "local-exec" {
+    command = "sleep 5"
+  }
+
+	triggers = {
+    container_id 			= proxmox_virtual_environment_container.container.id
+		provisioner				= sha1(file("../modules/ansible-roles/consul_agent/tasks/main.yml"))
+		consul_cfg				= yamlencode(var.consul)
+  }
+
+	depends_on = [
+		null_resource.provisioner
 	]
 
 }

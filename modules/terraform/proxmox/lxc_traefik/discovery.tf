@@ -1,7 +1,7 @@
 data "consul_nodes" "nodes" {
   query_options {
 		# Last bit creates hacky dependency, `depends_on` always triggers data source read
-    datacenter = "${var.consul.default.data_center}${replace(null_resource.provision.id, "/.*/", "")}"
+    datacenter = "${var.consul.default.data_center}${replace(null_resource.consul_agent.id, "/.*/", "")}"
   }
 }
 
@@ -10,21 +10,16 @@ locals {
 	root_key = lookup(var.data, "root_key", "traefik")
 }
 
-# Dashboard Service
+# Traefik Dynamic configuration
 resource "consul_agent_service" "service" {
 	address = local.node.address
   name = var.data.container_name
-  tags = [
-	  "traefik.enable=true",
-		"traefik.http.routers.${var.data.container_name}.entryPoints=https",
-	  "traefik.http.routers.${var.data.container_name}.rule=Host(`${var.data.hostname}`)",
-		"traefik.http.routers.${var.data.container_name}.tls.certResolver=${var.data.cert_resolver}",
-	  "traefik.http.routers.${var.data.container_name}.service=api@internal",
-  ]
+  tags = var.dynamic_config
 
-	depends_on = [ null_resource.provision ]
+	depends_on = [ null_resource.provisioner ]
 }
 
+# Create prefix key
 resource "consul_keys" "traefik" {
 	datacenter = var.consul.default.data_center
 	
@@ -33,9 +28,11 @@ resource "consul_keys" "traefik" {
 		delete = true
 	}
 
-	depends_on = [ null_resource.provision ]
+	depends_on = [ null_resource.provisioner ]
 }
 
+# Creates global http to https middleware
+# Every request will be redirected to https
 resource "consul_keys" "global-http-to-https-redirect" {
 	datacenter = var.consul.default.data_center
 		
@@ -75,5 +72,5 @@ resource "consul_keys" "global-http-to-https-redirect" {
 		delete = true
 	}
 
-	depends_on = [ null_resource.provision ]
+	depends_on = [ null_resource.provisioner ]
 }

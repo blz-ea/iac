@@ -21,3 +21,13 @@ variable "consul" {
 variable "data" {
   type = any
 }
+
+variable "tags" {
+  type = list(string)
+  default = []
+}
+
+variable "dependencies" {
+  type = list
+  default = []
+}

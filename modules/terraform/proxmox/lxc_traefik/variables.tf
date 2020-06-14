@@ -36,3 +36,8 @@ variable "environment" {
   type = list
   default = []
 }
+
+variable "dynamic_config" {
+  type = list
+  default = []
+}

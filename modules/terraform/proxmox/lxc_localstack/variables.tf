@@ -23,5 +23,11 @@ variable "data" {
 }
 
 variable "dependencies" {
+  type = list
+  default = []
+}
+
+variable "tags" {
   type = any
+  default = {}
 }

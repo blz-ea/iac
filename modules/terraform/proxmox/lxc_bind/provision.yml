@@ -15,7 +15,7 @@
         upgrade: "yes"
         update_cache: "yes"
         cache_valid_time: 86400 # One day
-    
+
     - name: Install Bind DNS Server
       include_role:
         name: bind
@@ -27,6 +27,8 @@
         bind_listen_ipv4: ["any"]
         bind_zone_master_server_ip: "{{ ansible_default_ipv4.address }}"
         bind_dns_keys: "{{ terraform_config.bind_dns_keys }}"
+        bind_extra_include_files:
+          - "/etc/bind/auth_transfer.conf"
         bind_zone_domains: "{{ terraform_config.bind_zone_domains }}"
     
     - name: Install Dns-Over-Https

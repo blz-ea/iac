@@ -7,6 +7,12 @@ locals {
   container_ip_address = split("/", var.data.ip_config.ipv4.address)[0]
 }
 
+resource "null_resource" "depends_on" {
+  triggers = {
+    depends_on = "${join("", var.dependencies)}"
+  }
+}
+
 resource "proxmox_virtual_environment_container" "container" {
 	description = "Managed by Terraform"
 	node_name = var.data.node_name
@@ -54,29 +60,64 @@ resource "proxmox_virtual_environment_container" "container" {
 		type = "ubuntu"
 	}
 
+	depends_on = [
+		null_resource.depends_on
+	]
+
 }
 
-resource "null_resource" "provision" {
-	# Append Additional Configuration to Container via SSH
+# Add additional configuration to container from Proxmox node
+resource "null_resource" "append" {
 	provisioner "local-exec" {
-		command = "ansible-playbook -i '${local.node_hostname},' ${path.module}/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
+		command = "ansible-playbook -i '${local.node_hostname},' ../modules/ansible-roles/proxmox_lxc_config/tasks/main.yml -e 'ansible_user=${local.node_username}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
+			ANSIBLE_FORCE_COLOR = "True",
+			TERRAFORM_CONFIG 			= yamlencode({
+				container_name 					= local.container_name
+				container_id  					= proxmox_virtual_environment_container.container.id
+				container_mounts				= lookup(var.data, "mounts", [])
+			}),
 		}
 	}
 
-	# Provision Container
+	triggers = {
+		mounts = yamlencode(lookup(var.data, "mounts", []))
+	}
+	
+	depends_on = [
+		proxmox_virtual_environment_container.container
+	]
+
+}
+
+# Provision Container
+resource "null_resource" "provisioner" {
 	provisioner "local-exec" {
 		command = "ansible-playbook -i '${local.container_ip_address},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
 		environment = {
-			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
+			ANSIBLE_CONFIG 				= "../ansible.cfg",
+			ANSIBLE_FORCE_COLOR 	= "True"
+			TERRAFORM_CONFIG 			= yamlencode({
+				domain = var.domain
+				consul = var.consul
+			})
 		}
 	}
-
-  provisioner "local-exec" {
-    command = "sleep 15"
+	
+	provisioner "local-exec" {
+    command = "sleep 5"
   }
+
+	triggers = {
+    container_id 					= proxmox_virtual_environment_container.container.id
+		consul								= yamlencode(var.consul)
+		domain								= yamlencode(var.domain)
+		provisioner						= sha1(file("${path.module}/provision.yml"))
+  }
+	
+	depends_on = [
+		null_resource.append
+	]
 
 }

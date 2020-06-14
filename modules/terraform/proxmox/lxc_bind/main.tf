@@ -3,13 +3,13 @@ locals {
   node_hostname = var.proxmox.nodes.pve.ssh.hostname
   node_username = var.proxmox.nodes.pve.ssh.username
   node_name = var.proxmox.nodes.pve.name
-  container_name = var.data.container_name
-  container_ip_address = split("/", var.data.ip_config.ipv4.address)[0]
+  container_name = var.container_cfg.container_name
+  container_ip_address = split("/", var.container_cfg.ip_config.ipv4.address)[0]
 }
 
 resource "proxmox_virtual_environment_container" "container" {
 	description = "Managed by Terraform"
-	node_name = var.data.node_name
+	node_name = var.container_cfg.node_name
 	started = true
 
 	cpu {
@@ -23,12 +23,12 @@ resource "proxmox_virtual_environment_container" "container" {
 			server = var.domain.dns_servers[0]
 		}
 
-		hostname = var.data.hostname
+		hostname = var.container_cfg.hostname
 
 		ip_config {
 			ipv4 {
-				address = var.data.ip_config.ipv4.address
-				gateway = var.data.ip_config.ipv4.gateway
+				address = var.container_cfg.ip_config.ipv4.address
+				gateway = var.container_cfg.ip_config.ipv4.gateway
 			}
 		}
 
@@ -40,13 +40,13 @@ resource "proxmox_virtual_environment_container" "container" {
 	}
 
 	memory {
-		dedicated = var.data.memory.dedicated
-		swap = var.data.memory.swap
+		dedicated = var.container_cfg.memory.dedicated
+		swap = var.container_cfg.memory.swap
 	}
 
 	network_interface {
-		name = var.data.network.name
-		mac_address = var.data.network.mac_address
+		name = var.container_cfg.network.name
+		mac_address = var.container_cfg.network.mac_address
 	}
 
 	operating_system {
@@ -66,7 +66,7 @@ resource "null_resource" "provisioner" {
 			ANSIBLE_CONFIG = "../ansible.cfg",
 			ANSIBLE_FORCE_COLOR = "True"
 			# Role variables
-			TERRAFORM_CONFIG = yamlencode(var.data.provisioner)
+			TERRAFORM_CONFIG = yamlencode(var.data)
 		}
 	}
 
@@ -76,7 +76,7 @@ resource "null_resource" "provisioner" {
 
 	triggers = {
 		container_id 			= proxmox_virtual_environment_container.container.id
-		terraform_config 	= yamlencode(var.data.provisioner)
+		terraform_config 	= yamlencode(var.data)
 		provisioner				= sha1(file("${path.module}/provision.yml"))
 	}
 

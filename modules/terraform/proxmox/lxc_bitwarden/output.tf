@@ -1,3 +1,3 @@
-output "provisioner_id" {
-	value = null_resource.provision.id
+output "provisionerer_id" {
+	value = null_resource.provisioner.id
 }

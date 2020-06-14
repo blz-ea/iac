@@ -21,3 +21,7 @@ variable "consul" {
 variable "data" {
   type = any
 }
+
+variable "container_cfg" {
+  type = any
+}

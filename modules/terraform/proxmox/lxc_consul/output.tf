@@ -1,7 +1,7 @@
 output "provisioner_id" {
-	value = null_resource.provision.id
+	value = null_resource.provisioner.id
 }
 
-output "id" {
-	value = null_resource.provision.id
+output "ip_address" {
+	value = local.container_ip_address
 }

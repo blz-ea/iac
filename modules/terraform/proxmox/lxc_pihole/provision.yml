@@ -3,24 +3,32 @@
   gather_facts: no
   become: yes
   pre_tasks:
-    - name: Include variables
-      vars:
-        file: prod.yml
-      include_role:
-        name: vars
-      tags:
-        - always
+  - name: Run Pre-tasks
+    include_role:
+      name: pre_tasks
+    tags:
+      - always
   tasks:
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: "yes"
+        update_cache: "yes"
+        cache_valid_time: 86400 # One day
+      tags:
+        - preflight
+        - check
+        
     - name: Install Pihole
       include_role:
         name: pihole
       vars:
-        webui_password: "{{ lxc.pihole.webui_password }}"
-        dns_servers: "{{ lxc.pihole.network.dns_servers }}"
-        conditional_forwarding: "{{ lxc.pihole.conditional_forwarding }}"
-        conditional_forwarding_ip: "{{ lxc.pihole.conditional_forwarding_ip }}"
-        conditional_forwarding_domain: "{{ lxc.pihole.conditional_forwarding_domain }}"
-        conditional_forwarding_reverse: "{{ lxc.pihole.conditional_forwarding_reverse }}"
+        webui_password: "{{ terraform_config.webui_password }}"
+        dns_servers: "{{ terraform_config.network.dns_servers }}"
+        conditional_forwarding: "{{ terraform_config.conditional_forwarding }}"
+        conditional_forwarding_ip: "{{ terraform_config.conditional_forwarding_ip }}"
+        conditional_forwarding_domain: "{{ terraform_config.conditional_forwarding_domain }}"
+        conditional_forwarding_reverse: "{{ terraform_config.conditional_forwarding_reverse }}"
         extra_block_lists:
           - url: https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/facebook/all-but-whatsapp
             enabled: true
@@ -70,22 +78,8 @@
           - url: https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt
             enabled: true
 
-          - url: https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt
-            enabled: true
-
           - url: https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
             enabled: true
       tags:
         - lxc
         - pihole
-
-    - name: Install Consul Agent
-      include_role:
-        name: consul
-      vars:
-        encrypt_key: "{{ consul.default.encrypt_key }}"
-        domain_name: "{{ domain.name }}"
-        datacenter_name: "{{ consul.default.data_center }}"
-        start_join: "{{ consul[consul.default.data_center].servers | map(attribute='host') | list }}"
-      tags:
-        - consul

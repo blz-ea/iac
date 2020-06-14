@@ -58,10 +58,15 @@ resource "proxmox_virtual_environment_container" "container" {
 
 	# Add Container's IP address to KV store
 	provisioner "local-exec" {
-		command = "ansible-playbook -i ${local.node_hostname}, ../modules/ansible-roles/lxc_register/tasks/main.yml -e 'ansible_user=${local.node_username}' -e 'pve_node=${local.node_name}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
+		command = "ansible-playbook -i ${local.node_hostname}, ../modules/ansible-roles/proxmox_lxc_register/tasks/main.yml -e 'ansible_user=${local.node_username}'"
 		environment = {
 			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
+			ANSIBLE_FORCE_COLOR = "True",
+			TERRAFORM_CONFIG 			= yamlencode({
+				pve_node 			= var.data.node_name
+				consul			  = var.consul
+				container_id  = proxmox_virtual_environment_container.container.id
+			}),
 		}
 	}
 
@@ -82,32 +87,84 @@ data "consul_keys" "container" {
 
 }
 
-resource "null_resource" "provision" {
-  
+# Add additional configuration to container from Proxmox node
+resource "null_resource" "append" {
+	provisioner "local-exec" {
+		command = "ansible-playbook -i '${local.node_hostname},' ../modules/ansible-roles/proxmox_lxc_config/tasks/main.yml -e 'ansible_user=${local.node_username}'"
+		environment = {
+			ANSIBLE_CONFIG = "../ansible.cfg",
+			ANSIBLE_FORCE_COLOR = "True",
+			TERRAFORM_CONFIG 			= yamlencode({
+				container_name 					= local.container_name
+				container_id  					= proxmox_virtual_environment_container.container.id
+				container_mounts				= lookup(var.data, "mounts", [])
+				container_lxc_cfg				= lookup(var.data, "lxc_cfg", [])
+				# Docker inside LXC container requires extra modules enabled on the node
+				host_kernel_modules			= lookup(var.data, "host_kernel_modules", [])
+				container_features			= lookup(var.data, "features", "")
+			}),
+		}
+	}
+
 	triggers = {
-    container_id = proxmox_virtual_environment_container.container.id
-  }
-
-	# Append Additional Configuration to Container via SSH
-	provisioner "local-exec" {
-		command = "ansible-playbook -i '${local.node_hostname},' ${path.module}/append.yml -e 'container_name=${local.container_name}' -e 'ansible_user=${local.node_username}' -e 'container_id=${proxmox_virtual_environment_container.container.id}'"
-		environment = {
-			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
-		}
+		mounts = yamlencode(lookup(var.data, "mounts", []))
 	}
-
-	# Provision Container
-	provisioner "local-exec" {
-		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
-		environment = {
-			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True"
-		}
-	}
-
+	
 	depends_on = [
 		data.consul_keys.container,
 		proxmox_virtual_environment_container.container
 	]
+
+}
+
+# Provision Container
+resource "null_resource" "provisioner" {
+	provisioner "local-exec" {
+		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ${path.module}/provision.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		environment = {
+			ANSIBLE_CONFIG 				= "../ansible.cfg",
+			ANSIBLE_FORCE_COLOR 	= "True"
+			TERRAFORM_CONFIG 			= yamlencode({})
+		}
+	}
+
+	triggers = {
+    container_id 					= proxmox_virtual_environment_container.container.id
+		provisioner						= sha1(file("${path.module}/provision.yml"))
+  }
+	
+	depends_on = [
+		null_resource.append
+	]
+
+}
+
+# Provision Container - Consul Agent
+resource "null_resource" "consul_agent" {
+		
+	provisioner "local-exec" {
+		command = "ansible-playbook -i '${data.consul_keys.container.var.ipv4_address_0},' ../modules/ansible-roles/consul_agent/tasks/main.yml -e 'ansible_user=${lookup(var.data, "username", "root")}'"
+		environment = {
+			ANSIBLE_CONFIG 				= "../ansible.cfg",
+			ANSIBLE_FORCE_COLOR 	= "True",
+			TERRAFORM_CONFIG 			= yamlencode({
+				consul = var.consul
+			})
+		}
+	}
+
+	provisioner "local-exec" {
+    command = "sleep 5"
+  }
+
+	triggers = {
+    container_id 			= proxmox_virtual_environment_container.container.id
+		provisioner				= sha1(file("../modules/ansible-roles/consul_agent/tasks/main.yml"))
+		consul_cfg				= yamlencode(var.consul)
+  }
+
+	depends_on = [
+		null_resource.provisioner
+	]
+
 }

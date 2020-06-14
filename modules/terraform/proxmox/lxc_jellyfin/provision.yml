@@ -3,19 +3,12 @@
   gather_facts: no
   become: yes
   pre_tasks:
-    - name: Include variables
-      vars:
-        file: prod.yml
-      include_role:
-        name: vars
-      tags:
-        - always
+  - name: Run Pre-tasks
+    include_role:
+      name: pre_tasks
+    tags:
+      - always
   tasks:
-    - name: Wait for target to become reachable
-      wait_for_connection:
-        delay: 10
-        timeout: 300
-
     - name: Update and upgrade apt packages
       become: true
       apt:
@@ -30,12 +23,3 @@
           become: yes
       tags:
         - always
-
-    - name: Install Consul Agent
-      include_role:
-        name: consul
-      vars:
-        encrypt_key: "{{ consul.default.encrypt_key }}"
-        domain_name: "{{ domain.name }}"
-        datacenter_name: "{{ consul.default.data_center }}"
-        start_join: "{{ consul[consul.default.data_center].servers | map(attribute='host') | list }}"
