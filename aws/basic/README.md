@@ -15,7 +15,7 @@ This provides a template for running a simple architecture on Amazon Web Service
 ### Step 1: Setup variables ###
 
 - Create Terraform workspace `terraform workspace new <environment>`
-- Create environmental variable file in `../vars` similar to [../vars/default_aws.yml](../vars/default_aws.yml)
+- Create environmental variable file in `../vars` similar to [../vars/default_aws.yml](../../vars/default_aws.yml)
 - Change workspace: `terraform workspace select <environnement>`
 
 ### Step 2: Start Deployment ###

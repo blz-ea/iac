@@ -45,6 +45,11 @@ module "proxmox_templates" {
 	}
 
 	templates = local.packer
+	dependencies = [
+		module.proxmox_file.iso.ubuntu-18-04-4-server-amd64.file_name,
+		module.proxmox_file.iso.ubuntu-19-10-server-amd64.file_name,
+		module.proxmox_file.iso.centos-7-x86-64-minimal-1908.file_name,
+	]
 
 	source 		= "./templates"
 }
