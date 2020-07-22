@@ -44,3 +44,5 @@ inventory/*
 !inventory/lab
 .ansible.state
 .packer-*
+*.prod.tfvars
+terraform.tfstate.d

@@ -1,3 +1,0 @@
-variable "proxmox" {
-  type = any
-}

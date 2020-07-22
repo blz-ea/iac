@@ -14,5 +14,5 @@ else
 	@echo "Ansible already installed"
 endif
 
-start: prep
+install: prep
 			@ansible-playbook ./requirements.yml
