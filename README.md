@@ -4,7 +4,7 @@
 <img src="./.github/header.png">
 </div>
 
-A boilerplate to create a full Infrastructure as Code repository for various cloud environments, from provisioning to deployment with:
+A boilerplate to create a full Infrastructure as Code for various cloud environments, from provisioning to deployment with:
 
 - **Terraform**
 - **Ansible**
@@ -23,15 +23,10 @@ A boilerplate to create a full Infrastructure as Code repository for various clo
   - `ansible-roles` - Ansible roles
   - `bash` - Bash scripts
   - `terraform` - Terraform modules
+  - `helm` - Helm charts
 - `pve` - Proxmox Virtual Environment
-- `aws` - Amazon Web Services environment [WIP]
-- `k8s` - Kubernetes environment [WIP]
-- `vars` - Workspace variables
-  - `default.yml` - Default variables that will be loaded alongside with others
-  - `<your_env_here>.yml` - Environment variables for specific environment
-- `requirements.yml` - Local requirements Ansible playbook
-
-**Note**: Terraform's workspace value defines what variables will be loaded from `vars` folder
+- `aws` - Amazon Web Services environment
+- `requirements.yml` - Local requirements (Ansible playbook)
 
 ## Quick start ##
 
@@ -44,22 +39,21 @@ git clone git@github.com:blz-ea/devops.git
 ### Step 2: Install requirements ###
 
 ```bash
-make start
+make install
 ```
 
 or manually install
 
-- Ansible
-- Terraform
-- Packer
+- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html)
+- [Packer](https://learn.hashicorp.com/packer/getting-started/install)
 
-### Step 3: Select environnement ###
+### Example environments ###
 
 - [Proxmox Virtual Environment](./pve/)
 - Amazon Web Services
   - [Basic example](./aws/basic/)
   - ...
-- K8S [WIP]
 
 ## Notes ##
 
@@ -79,18 +73,7 @@ generateHosts = true
 generateResolvConf = true
 
 ```
-
-### Terraform's Consul Plugin Deprecation warning ###
-
-Due to issues with `consul_service` resource, resource  `consul_agent_service` with deprecation warning is used
-
-#### References ####
-
-- https://github.com/terraform-providers/terraform-provider-consul/issues/124
-- https://github.com/terraform-providers/terraform-provider-consul/issues/187
-- https://github.com/hashicorp/consul/issues/7513
-
 ## TODO ##
 
 - Add tests
-- Decouple variable into smaller files, add support for Hashicorp Vault
+- Add support for Hashicorp Vault
