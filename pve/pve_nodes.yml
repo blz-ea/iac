@@ -5,14 +5,6 @@
 - hosts: all
   gather_facts: no
   become: yes
-  pre_tasks:
-    - name: Include variables
-      vars:
-        file: prod.yml
-      include_role:
-        name: vars
-      tags:
-        - always
   tasks:
     - name: Delete Proxmox Enterprise Repository from sources
       file:
@@ -154,7 +146,7 @@
                 ## Get Vendor IDs for GPU and Audio Bus
                 ## lspci -v # > 01:00.0 VGA controller 01:00.1 Audio Device
                 ## lspci -ns 01:00 # > 1234:1234, 1234:1234
-                options vfio-pci ids={{ proxmox.nodes.pve.vfio_pci.ids | join(",") }}
+                options vfio-pci ids={{ ( vfio-pci-ids | default([]) ) | join(",") }}
         dest: /etc/modprobe.d/vfio.conf
       tags:
         - proxmox

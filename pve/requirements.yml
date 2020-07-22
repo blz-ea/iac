@@ -21,7 +21,7 @@
       tags:
         - packer
 
-    - name: Check if go installed
+    - name: Check if Go installed
       shell: "bash -ilc 'which go'"
       register: go_installation
       ignore_errors: true
@@ -40,7 +40,7 @@
         - terraform
         - golang
 
-    - name: Create ~/.terraform.d/plugins
+    - name: Create ~/.terraform.d/plugins folder
       file:
         path: ~/.terraform.d/plugins
         state: directory
@@ -48,7 +48,7 @@
         - terraform
         - plugins
 
-    - name: Clone third party proxmox plugins
+    - name: Clone terraform proxmox provider repository
       git:
         repo: https://github.com/danitso/terraform-provider-proxmox
         dest: $GOPATH/src/terraform-provider-proxmox
@@ -58,7 +58,7 @@
         - proxmox
         - plugins
 
-    - name: Build executables
+    - name: Build terraform proxmox provider executables
       make:
         chdir: $GOPATH/src/terraform-provider-proxmox
         target: init
@@ -67,7 +67,7 @@
         - proxmox
         - plugins
 
-    - name: Build executables
+    - name: Build terraform proxmox provider executables
       make:
         chdir: $GOPATH/src/terraform-provider-proxmox
         target: build
@@ -76,7 +76,7 @@
         - proxmox
         - plugins
 
-    - name: Copy Executables
+    - name: Copy terraform proxmox provider executables
       copy:
         src: $GOPATH/src/terraform-provider-proxmox/bin/
         dest: ~/.terraform.d/plugins
@@ -86,7 +86,7 @@
         - proxmox
         - plugins
     
-    - name: Set permissions
+    - name: Set `/.terraform.d/plugins permissions
       file:
         dest: ~/.terraform.d/plugins
         mode: +x
@@ -95,4 +95,36 @@
         - terraform
         - proxmox
         - plugins
+
+    - name: Get latest kubectl release information
+      uri:
+        url: "https://storage.googleapis.com/kubernetes-release/release/stable.txt"
+        method: GET
+        status_code: 200
+        body_format: raw
+        return_content: true
+      register: kubectl_stable_response
+      tags:
+        - k8s
+        - kubectl
+
+    - name: Delete kubectl executable
+      become: yes
+      file: path=/usr/local/bin/kubectl state=absent
+      tags:
+        - k8s
+        - kubectl
+
+    - name: Get latest kubectl release
+      become: yes
+      uri:
+        url: "https://storage.googleapis.com/kubernetes-release/release/{{ kubectl_stable_response.content[:-1] }}/bin/linux/amd64/kubectl"
+        method: GET
+        status_code: 200
+        dest: "/usr/local/bin/kubectl"
+        mode: +x
+      tags:
+        - k8s
+        - kubectl
+
 
