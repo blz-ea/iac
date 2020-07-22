@@ -73,7 +73,6 @@ resource "proxmox_virtual_environment_container" "container" {
 	depends_on = [
 		null_resource.depends_on
 	]
-
 }
 
 # Get Container's IP address from KV Store

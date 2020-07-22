@@ -155,9 +155,9 @@ resource "null_resource" "provisioner" {
 	}
 
 	triggers = {
-    container_id 					= proxmox_virtual_environment_container.container.id
-		traefik_cli_options 	= yamlencode(distinct(concat(var.cli_options, local.default_cli_options)))
-		traefik_environment		= yamlencode(var.environment)
+    	container_id 					= proxmox_virtual_environment_container.container.id
+		traefik_cli_options 			= yamlencode(distinct(concat(var.cli_options, local.default_cli_options)))
+		traefik_environment				= yamlencode(var.environment)
 		provisioner						= sha1(file("${path.module}/provision.yml"))
   }
 	
@@ -186,7 +186,7 @@ resource "null_resource" "consul_agent" {
   }
 
 	triggers = {
-    container_id 			= proxmox_virtual_environment_container.container.id
+    	container_id 			= proxmox_virtual_environment_container.container.id
 		provisioner				= sha1(file("../modules/ansible-roles/consul_agent/tasks/main.yml"))
 		consul_cfg				= yamlencode(var.consul)
   }

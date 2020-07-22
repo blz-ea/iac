@@ -72,11 +72,11 @@ resource "docker_container" "container" {
     read_only       = false
   }
 
-  # upload {
-  #   content       = templatefile("${path.module}/traefik.yml.tpl", {})
-  #   source_hash   = sha1(templatefile("${path.module}/traefik.yml.tpl", {}))
-  #   file          = "/etc/traefik/traefik.yml"
-  # }
+  upload {
+     content       = yamlencode(var.file_cfg)
+     source_hash   = sha1(yamlencode(var.file_cfg))
+     file          = "/etc/conf.d/file_cfg.yml"
+  }
 
   command = concat(["traefik"], distinct(concat(var.command, local.default_command)))
 

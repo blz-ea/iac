@@ -1,6 +1,6 @@
 data "consul_nodes" "nodes" {
   query_options {
-		# Last bit creates hacky dependency, `depends_on` always triggers data source read
+	# Last bit creates hacky dependency, `depends_on` always triggers data source read
     datacenter = "${var.consul.default.data_center}${replace(null_resource.consul_agent.id, "/.*/", "")}"
   }
 }
@@ -13,8 +13,8 @@ locals {
 # Traefik Dynamic configuration
 resource "consul_agent_service" "service" {
 	address = local.node.address
-  name = var.data.container_name
-  tags = var.dynamic_config
+  	name = var.data.container_name
+  	tags = var.dynamic_config
 
 	depends_on = [ null_resource.provisioner ]
 }

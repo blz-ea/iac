@@ -1,24 +1,25 @@
 variable "dependencies" {
-  type = any
+  type = list(string)
+  default = []
 }
 
 variable "env" {
-  type = any
+  type = list(string)
   default = []
 }
 
 variable "labels" {
-  type = any
+  type = list(string)
   default = []
 }
 
 variable "command" {
-  type = any
+  type = list(string)
   default = []
 }
 
 variable "ports" {
-  type = any
+  type = list(string)
   default = []
 }
 
@@ -33,6 +34,6 @@ variable "image_version" {
 }
 
 variable "networks_advanced" {
-  type = any
+  type = list(string)
   default = []
 }
