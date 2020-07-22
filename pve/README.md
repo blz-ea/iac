@@ -23,15 +23,13 @@ PVE Manager Version: 6.2-6
 - [`main`](./main.tf) - Main entry point
 - [`k8s_cluster`](./k8s_cluster) - Kubernetes cluster based on [Kubespray](https://github.com/kubernetes-sigs/kubespray)
 - [`k8s Infrastructure`](./k8s_infrastructure) - Kubernetes infrastructure
-- [`bastion`](./bastion.tf)
-- [`packer`](./packer.tf) - Packer deployment
+- [`packer`](./packer.tf) - Packer deployments
     - [`templates`](./templates) - Packer templates
 - [`bastion`](./bastion.tf) - Bastion Host
-- [`dns_records`](./dns_records.tf) - Dns records
+- [`dns_records`](./dns_records.tf) - Local & Global DNS records
 - [`file`](./file.tf) - File resources (e.g. iso, lxc images)
 - [`pve_nodes.yml`](./pve_nodes.yml)  - Additional configuration applied to Proxmox node
 - [`requirements.yml`](./requirements.yml) - Local environment requirements (Ansible playbook)
-- `ansible.cfg` - Ansible configuration file
 
 ## Quick start ##
 
