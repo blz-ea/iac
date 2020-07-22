@@ -1,0 +1,19 @@
+# Default values for cert-manager-cluster-issuer.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: "letsencrypt-prod"
+email: "example@domain.com"
+server: "https://acme-v02.api.letsencrypt.org/directory"
+dnsZones: []
+providerName: "cloudflare"
+
+apiKeySecretRef:
+  enabled: false
+  name: ref-name
+  key: ref-key
+
+apiTokenSecretRef:
+  enabled: false
+  name: ref-name
+  key: ref-key

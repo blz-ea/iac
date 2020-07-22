@@ -1,0 +1,32 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.name | quote }}
+  labels:
+    name: {{ .Values.name | quote }}
+spec:
+  acme:
+    server: {{ .Values.server | quote }}
+    email: {{ .Values.email | quote }}
+    privateKeySecretRef:
+      name: {{ .Values.name | quote }}
+    solvers:
+      - dns01:
+          {{ .Values.providerName | nindent 10 }}:
+            email: {{ .Values.email | quote }}
+            {{- if .Values.apiKeySecretRef.enabled }}
+            apiKeySecretRef:
+              name: {{ .Values.apiKeySecretRef.name }}
+              key: {{ .Values.apiKeySecretRef.key }}
+            {{- end }}
+
+            {{- if .Values.apiTokenSecretRef.enabled }}
+            apiTokenSecretRef:
+              name: {{ .Values.apiTokenSecretRef.name }}
+              key: {{ .Values.apiTokenSecretRef.key }}
+            {{- end }}
+        selector:
+          dnsZones:
+            {{- with .Values.dnsZones }}
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
