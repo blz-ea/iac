@@ -8,11 +8,9 @@
         delay: 10
         timeout: 300
 
-    - name: Include variables
-      vars:
-        file: prod.yml
+    - name: Run Pre-tasks
       include_role:
-        name: vars
+        name: pre_tasks
       tags:
         - always
   tasks:    
@@ -27,30 +25,30 @@
       include_role:
         name: user
       vars:
-        username: "{{ default_user.name }}"
-        password: "{{ default_user.password }}"
-        passwordless_sudo: "{{ default_user.passwordless_sudo }}"
-        user_groups: "{{ default_user.user_groups }}"
-        authorized_keys: "{{ default_user.authorized_keys }}"
+        username: "{{ terraform_config.user_name }}"
+        password: "{{ terraform_config.user_password }}"
+        passwordless_sudo: yes
+        user_groups: "sudo"
+        authorized_keys: "{{ terraform_config.bastion_user_authorized_keys }}"
       tags:
         - user
 
-    - name: SSH
+    - name: Install and Configurate SSH
       vars:
-        access_port: "{{ bastion.ssh.access_port }}"
-        root_acc_access: "{{ bastion.ssh.root_acc_access }}"
-        password_auth: "{{ bastion.ssh.password_auth }}"
+        access_port: "{{ bastion_ssh_port }}"
+        root_acc_access: no
+        password_auth: no
         set_ssh_ansible_user: "{{ default_user.name }}"
       include_role:
         name: ssh
       tags:
         - ssh
     
-    - name: Tmux
+    - name: Intall Tmux
       include_role:
         name: tmux
       vars:
-        username: "{{ default_user.name }}"
+        username: "{{ terraform_config.user_name }}"
       tags:
         - tmux
 
@@ -66,12 +64,12 @@
       tags:
         - golang
 
-    - name: UFW
+    - name: Install and Configurate UFW
       include_role:
         name: ufw
       vars:
-        state: "{{ bastion.ufw.state }}"
-        rules: "{{ bastion.ufw.rules }}"
+        state: enabled
+        rules: "{{ terraform_config.ufw_rules }}"
       tags:
         - ufw
 
@@ -87,17 +85,17 @@
       tags:
         - mosh
     
-    - name: Python3
+    - name: Install Python3
       include_role:
         name: python3
       tags:
         - python3
 
-    - name: Setup Oh My ZSH
+    - name: Install Oh My ZSH
       include_role:
         name: oh_my_zsh
       vars:
-        username: "{{ default_user.name }}"
+        username: "{{ terraform_config.user_name }}"
       tags:
         - oh_my_zsh
 
@@ -109,7 +107,7 @@
           tags:
             always
       vars:
-        docker__users: ["{{ default_user.name }}"]
+        docker__users: ["{{ terraform_config.user_name }}"]
       tags:
         - docker
         - install
