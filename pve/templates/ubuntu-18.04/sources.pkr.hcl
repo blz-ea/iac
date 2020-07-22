@@ -1,48 +1,44 @@
-locals {
-	template 			= local.workspace.packer.ubuntu.bionic
-	proxmox_cfg 	= local.workspace.proxmox.nodes.pve.api
-	proxmox_node	= local.workspace.proxmox.nodes.pve
-}
 source "proxmox" "ubuntu" {
-	proxmox_url 							=  "${local.proxmox_cfg.url}/api2/json"
-	insecure_skip_tls_verify 	= local.proxmox_cfg.tls_insecure
-	username 									= local.proxmox_cfg.username
-	password 									= local.proxmox_cfg.password
-	node 											= local.proxmox_node.name
+	proxmox_url 				= "${var.proxmox_hostname}/api2/json"
+	insecure_skip_tls_verify 	= var.proxmox_insecure_skip_tls_verify
+	username 					= var.proxmox_username
+	password 					= var.proxmox_password
+	node 						= var.proxmox_node
 	
-	vm_name = local.template.name
-	vm_id = local.template.id
+	vm_name = var.template_name
+	vm_id 	= var.vm_id
 	
-	memory 	= local.template.memory
-	sockets = local.template.sockets
-	cores 	= local.template.cores
-	os 			= local.template.os
+	memory 	= var.vm_memory
+	sockets = var.vm_sockets
+	cores 	= var.vm_cores
+	os 		= "l26"
 
 	network_adapters {
 		model 	= "virtio"
 		bridge 	= "vmbr0"
 	}
 
-	qemu_agent 				= true
-	scsi_controller 	= local.template.scsi_controller
+	qemu_agent 			= true
+	scsi_controller 	= "virtio-scsi-pci"
 
 	disks {
-		type						= local.template.disk[0].type
-		disk_size 			= local.template.disk[0].disk_size
-		storage_pool 		= local.template.disk[0].storage_pool
-		storage_pool_type = local.template.disk[0].storage_pool_type
-		format 					= local.template.disk[0].format
+		type				= "scsi"
+		disk_size 			= "30G"
+		storage_pool 		= var.vm_storage_pool
+		storage_pool_type 	= "lvm-thin"
+		format 				= "raw"
 	}
 
-	ssh_username 		= local.workspace.default_user.name
-	ssh_password 		= local.workspace.default_user.password
+	ssh_username 		= var.vm_username
+	ssh_password 		= var.vm_user_password
 	ssh_timeout			= "30m"
 	
-	iso_file 				= local.template.iso_file
+	iso_file 			= var.vm_iso_file
+	onboot				= true
 	
-	template_name 	= local.template.name
-	template_description = local.template.description
-	unmount_iso 		= true
+	template_name 		 = var.template_name
+	template_description = var.template_description
+	unmount_iso 		 = true
    
 	
 	http_directory = "./templates/ubuntu-18.04/http"
@@ -54,13 +50,13 @@ source "proxmox" "ubuntu" {
 		"/install/vmlinuz initrd=/install/initrd.gz",
 		" auto=true priority=critical interface=auto",
 		" netcfg/dhcp_timeout=120",
-		" hostname=${local.template.name}",
-		" username=${local.workspace.default_user.name}",
-		" time_zone=${local.template.time_zone}",
-		" passwd/username=${local.workspace.default_user.name}",
-		" passwd/user-fullname=${local.workspace.default_user.name}",
-		" passwd/user-password=${local.workspace.default_user.password}",
-		" passwd/user-password-again=${local.workspace.default_user.password}",
+		" hostname=${var.template_name}",
+		" username=${var.vm_username}",
+		" time_zone=${var.vm_time_zone}",
+		" passwd/username=${var.vm_username}",
+		" passwd/user-fullname=${var.vm_username}",
+		" passwd/user-password=${var.vm_user_password}",
+		" passwd/user-password-again=${var.vm_user_password}",
 		" preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg",
 		" <enter>"
 	]
@@ -72,7 +68,6 @@ build {
 	]
 
 	provisioner "shell" {
-		# only = ["ubuntu"]  # <- not supported yet https://github.com/hashicorp/packer/issues/9094
 		# pause_before = "20s" # Not supported at the moment
 		environment_vars = [
 			"DEBIAN_FRONTEND=noninteractive",
@@ -85,6 +80,7 @@ build {
 			"sudo apt-get -y install linux-generic linux-headers-generic linux-image-generic",
 			"sudo apt-get -y install qemu-guest-agent cloud-init",
 			"sudo apt-get -y install wget curl",
+
 			# DHCP Server assigns same IP address if machine-id is preserved, new machine-id will be generated on first boot
 			"sudo truncate -s 0 /etc/machine-id",
 			"exit 0"

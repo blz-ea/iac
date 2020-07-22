@@ -1,23 +1,17 @@
-locals {
-	template 			= local.workspace.packer.centos.7
-	proxmox_cfg 	= local.workspace.proxmox.nodes.pve.api
-	proxmox_node	= local.workspace.proxmox.nodes.pve
-}
-
 source "proxmox" "centos" {
-	proxmox_url 							=  "${local.proxmox_cfg.url}/api2/json"
-	insecure_skip_tls_verify 	= local.proxmox_cfg.tls_insecure
-	username 									= local.proxmox_cfg.username
-	password 									= local.proxmox_cfg.password
-	node 											= local.proxmox_node.name
+	proxmox_url 				= "${var.proxmox_hostname}/api2/json"
+	insecure_skip_tls_verify 	= var.proxmox_insecure_skip_tls_verify
+	username 					= var.proxmox_username
+	password 					= var.proxmox_password
+	node 						= var.proxmox_node
+
+	vm_name = var.template_name
+	vm_id 	= var.vm_id
 	
-	vm_name = local.template.name
-	vm_id 	= local.template.id
-	
-	memory 	= local.template.memory
-	sockets = local.template.sockets
-	cores 	= local.template.cores
-	os 			= local.template.os
+	memory 	= var.vm_memory
+	sockets = var.vm_sockets
+	cores 	= var.vm_cores
+	os 		= "l26"
 
 	network_adapters {
 		model 	= "virtio"
@@ -25,34 +19,35 @@ source "proxmox" "centos" {
 	}
 
 	qemu_agent 			= true
-	scsi_controller = local.template.scsi_controller
+	scsi_controller 	= "virtio-scsi-pci"
 
 	disks {
-		type 							= local.template.disk[0].type
-		disk_size 				= local.template.disk[0].disk_size
-		storage_pool 			= local.template.disk[0].storage_pool
-		storage_pool_type = local.template.disk[0].storage_pool_type
-		format 						= local.template.disk[0].format
+		type				= "scsi"
+		disk_size 			= "30G"
+		storage_pool 		= var.vm_storage_pool
+		storage_pool_type 	= "lvm-thin"
+		format 				= "raw"
 	}
 
-	ssh_username 				= local.workspace.default_user.name
-	ssh_password 				= local.workspace.default_user.password
-	ssh_timeout					= "30m"
+	ssh_username 			= var.vm_username
+	ssh_password 			= var.vm_user_password
+	ssh_timeout				= "30m"
 	
-	iso_file 						= local.template.iso_file
+	iso_file 				= var.vm_iso_file
+	onboot					= true
 	
-	template_name 			= local.template.name
-	template_description = local.template.description
-	unmount_iso 				= true
-   
+	template_name 		 	= var.template_name
+	template_description 	= var.template_description
+	unmount_iso 		 	= true
+
 	http_directory 			= "./templates/centos-7/http"
 	boot_wait						= "10s"
 	boot_command = [
 		"<esc><wait><wait><wait><wait>",
 		"linux ks=http://{{.HTTPIP}}:{{.HTTPPort}}/preseed.cfg",
-		" USERNAME=${local.workspace.default_user.name}",
-		" PASSWORD=${local.workspace.default_user.password}",
-		" TIME_ZONE=${local.template.time_zone}",
+		" USERNAME=${var.vm_username}",
+		" PASSWORD=${var.vm_user_password}",
+		" TIME_ZONE=${var.vm_time_zone}",
 		" network --device=eth0 --bootproto=dhcp --onboot=yes --activate",
 		"<wait><wait><wait><enter>",
 	]
