@@ -113,6 +113,11 @@ variable "user_ssh_public_key_location" {
   default      = "~/.ssh/id_rsa.pub"
 }
 
+variable "user_email" {
+  description = "Default administrators's email"
+  type = string
+}
+
 #############################################################
 # Packer variables
 #############################################################

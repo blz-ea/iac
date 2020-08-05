@@ -12,7 +12,6 @@ variable "action" {
 #############################################################
 # Kubernetes variables
 #############################################################
-
 variable "k8s_kubespray_url" {
   description = "Kubespray git repository"
   type        = string

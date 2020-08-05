@@ -12,8 +12,20 @@ variable "metallb_ip_range" {
 }
 
 #############################################################
+# Default user settings
+#############################################################
+variable "user_email" {
+  description = "Default administrators's email"
+  type = string
+}
+
+#############################################################
 # Domain variables
 #############################################################
+variable "domain_name" {
+  description = "Domain name"
+  type = string
+}
 
 variable "cloudflare_api_token" {
   type = string

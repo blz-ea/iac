@@ -124,14 +124,18 @@ module "proxmox_k8s_cluster" {
 # Kubernetes Infrastructure
 #############################################################
 module "proxmox_k8s_infrastructure" {
-	metallb_ip_range 			= var.k8s_metallb_ip_range
-	cloudflare_api_token 		= var.cloudflare_api_token
-	cloudflare_account_email 	= var.cloudflare_account_email
-	cloudflare_zone_name		= var.domain_name
-	nfs_default_storage_class	= var.k8s_nfs_default_storage_class
-	nfs_server_address 			= var.k8s_nfs_server_address
-	gluster_cluster_endpoints	= var.k8s_gluster_cluster_endpoints
+	domain_name					 = var.domain_name
+	metallb_ip_range 			 = var.k8s_metallb_ip_range
+	cloudflare_api_token 		 = var.cloudflare_api_token
+	cloudflare_account_email 	 = var.cloudflare_account_email
+	cloudflare_zone_name		 = var.domain_name
+	nfs_default_storage_class	 = var.k8s_nfs_default_storage_class
+	nfs_server_address 			 = var.k8s_nfs_server_address
+	gluster_cluster_endpoints	 = var.k8s_gluster_cluster_endpoints
 
-	k8s_config_file_path 	= module.proxmox_k8s_cluster.k8s_config_file_path
+	k8s_config_file_path 		 = module.proxmox_k8s_cluster.k8s_config_file_path
+
+	user_email 					 = var.user_email
+
 	source = "./k8s_infrastructure"
 }

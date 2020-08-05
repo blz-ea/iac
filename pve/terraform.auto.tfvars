@@ -66,6 +66,9 @@ user_name = "deploy"
 # SSH public key location path
 user_ssh_public_key_location = "~/.ssh/id_rsa.pub"
 
+# Default administrators's email
+user_email = "deploy@example.com"
+
 #############################################################
 # Packer variables
 #############################################################
