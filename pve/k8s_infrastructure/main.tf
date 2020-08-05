@@ -6,6 +6,7 @@ locals {
 
 #############################################################
 # MetalLB
+# Ref: https://github.com/metallb/metallb
 #############################################################
 resource "kubernetes_namespace" "metallb_system" {
   metadata {
@@ -49,6 +50,7 @@ resource "helm_release" "metallb" {
 
 #############################################################
 # Nginx Ingress
+# Ref: https://github.com/kubernetes/ingress-nginx
 #############################################################
 resource "helm_release" "nginx_ingress" {
   name  = "ingress-nginx"
@@ -58,6 +60,7 @@ resource "helm_release" "nginx_ingress" {
 
 #############################################################
 # Cert Manager
+# Ref: https://github.com/jetstack/cert-manager
 #############################################################
 resource "kubernetes_namespace" "cert_manager" {
   metadata {
@@ -88,6 +91,8 @@ resource "helm_release" "cert_manager" {
 
 // Cluster issuer resource
 resource "helm_release" "cert_manager_cluster_issuer" {
+  count = length(var.cloudflare_account_email) > 0 ? 1 : 0
+
   chart = "${local.helm_chart_path}/cert-manager-cluster-issuer"
   name = "cert-manager-cluster-issuer"
 
@@ -102,41 +107,50 @@ resource "helm_release" "cert_manager_cluster_issuer" {
   }
 
   set {
-    name = "apiKeySecretRef.enabled"
+    name = "apiTokenSecretRef.enabled"
     value = "true"
   }
 
   set {
-    name = "apiKeySecretRef.name"
-    value = "cloudflare-api-key-secret"
+    name = "apiTokenSecretRef.name"
+    value = "cloudflare-api-token-secret"
   }
 
   set {
-    name = "apiKeySecretRef.key"
-    value = "api-key"
+    name = "apiTokenSecretRef.key"
+    value = "api-token"
   }
 
   set {
     name = "dnsZones"
-    value = "{${join(",", [ var.domain_name ])}}"
+    value = "{${join(",", [ var.cloudflare_zone_name ])}}"
   }
+
+  depends_on = [
+    helm_release.cert_manager
+  ]
 
 }
 
+# Cloudflare API token
+# Used by cert manager for DNS challenges
 resource "kubernetes_secret" "cloudflare_key_secret" {
+  count = length(var.cloudflare_api_token) > 0 ? 1 : 0
+
   metadata {
-    name = "cloudflare-api-key-secret"
+    name = "cloudflare-api-token-secret"
     namespace = local.cert_manager_namespace
   }
 
   data = {
-    api-key = var.cloudflare_api_token
+    api-token = var.cloudflare_api_token
   }
 
 }
 
 #############################################################
 # Kubernetes Dashboard
+# Ref: https://github.com/kubernetes/dashboard
 #############################################################
 // Dashboard is installed by kubespray
 
@@ -174,4 +188,106 @@ resource "kubernetes_cluster_role_binding" "kubernetes_dashboard" {
     null_resource.kubernetes_dashboard_remove_role_binding
   ]
 
+}
+
+# Proxy K8s dashboard through Pomerium
+resource "kubernetes_ingress" "k8s_dashboard_ingress" {
+  metadata {
+    namespace = "default"
+    name      = "k8s-dashboard-forwardauth"
+
+    annotations = {
+      "kubernetes.io/ingress.class"                   = "nginx"
+      "cert-manager.io/cluster-issuer"                = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/backend-protocol"  = "HTTPS"
+
+    }
+  }
+  spec {
+    tls {
+      hosts = [
+        "k8s-dashboard.${var.domain_name}"
+      ]
+      secret_name = "k8s-dashboard-${replace(var.domain_name, ".", "-")}"
+    }
+
+    rule {
+      host = "k8s-dashboard.${var.domain_name}"
+      http {
+        path {
+          path = "/"
+          backend {
+            service_name = "pomerium-proxy"
+            service_port = 443
+          }
+        }
+      }
+    }
+
+  }
+}
+
+#############################################################
+# Pomerium
+# Ref: https://www.pomerium.io/
+#############################################################
+locals {
+  pomerium_config = {
+    image = {
+      tag = "master"
+      pullPolicy = "Always"
+    }
+    // TODO: Add hosted IDP (Keycloak or Dex)
+    authenticate = {
+      idp = {
+        provider = "github"
+        clientID = var.github_oauth_client_id
+        clientSecret = var.github_oauth_client_secret
+      }
+    }
+
+    forwardAuth = {
+      enabled = true
+    }
+
+    config = {
+      rootDomain = var.domain_name
+      policy = [
+        {
+          from = "https://k8s-dashboard.${var.domain_name}"
+          to = "https://kubernetes-dashboard.kube-system.svc.cluster.local"
+          //preserve_host_header = true
+          // TODO: Remove static list of users, replace it with centralized solution
+          allowed_users = [
+            var.user_email
+          ]
+          tls_skip_verify = true
+          set_request_headers = {
+            Authorization = "Bearer ${var.k8s_dashboard_token}"
+          }
+        },
+      ]
+    }
+
+    ingress = {
+      annotations = {
+        "kubernetes.io/ingress.class" = "nginx"
+        "cert-manager.io/cluster-issuer": "letsencrypt-prod"
+        "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
+      }
+
+      secretName = "pomerium-ingress-tls"
+    }
+  }
+
+}
+
+resource "helm_release" "pomerium" {
+  name  = "pomerium"
+  chart = "pomerium"
+  repository = "https://helm.pomerium.io"
+
+  values = [
+    yamlencode(local.pomerium_config)
+  ]
 }

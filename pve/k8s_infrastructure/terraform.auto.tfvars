@@ -36,3 +36,15 @@ nfs_server_address = "192.168.1.1"
 
 # List of Gluster cluster endpoints
 gluster_cluster_endpoints = ["192.168.1.1", "192.168.1.2"]
+
+#############################################################
+# Authentication variables
+#############################################################
+# Github Oauth Client ID"
+github_oauth_client_id = ""
+
+# Github Oauth Client Secret
+github_oauth_client_secret = ""
+
+# K8s dashboard token
+k8s_dashboard_token = ""

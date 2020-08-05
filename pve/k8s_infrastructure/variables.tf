@@ -67,3 +67,26 @@ variable "gluster_cluster_endpoints" {
   default = []
   description = "List of Gluster cluster endpoints"
 }
+
+#############################################################
+# Authentication variables
+#############################################################
+variable "github_oauth_client_id" {
+  type = string
+  description = "Github Oauth Client ID"
+  default = ""
+}
+
+variable "github_oauth_client_secret" {
+  type = string
+  description = "Github Oauth Client Secret"
+  default = ""
+}
+
+variable "k8s_dashboard_token" {
+  # Can be found in K8s secrets (`kubernetes-dashboard-token-<unique_id>`) in `kube-system` namespace
+  # Provide decoded token
+  type = string
+  description = "K8s dashboard token"
+  default = ""
+}

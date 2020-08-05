@@ -234,3 +234,15 @@ bastion_drone_server_user_filter = ""
 
 # Create user Administrator
 bastion_drone_server_user_admin = ""
+
+#############################################################
+# Authentication variables
+#############################################################
+# Github Oauth Client ID"
+github_oauth_client_id = ""
+
+# Github Oauth Client Secret
+github_oauth_client_secret = ""
+
+# K8s dashboard token
+k8s_dashboard_token = ""

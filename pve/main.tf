@@ -134,7 +134,10 @@ module "proxmox_k8s_infrastructure" {
 	gluster_cluster_endpoints	 = var.k8s_gluster_cluster_endpoints
 
 	k8s_config_file_path 		 = module.proxmox_k8s_cluster.k8s_config_file_path
+	k8s_dashboard_token			 = var.k8s_dashboard_token
 
+	github_oauth_client_id		 = var.github_oauth_client_id
+	github_oauth_client_secret   = var.github_oauth_client_secret
 	user_email 					 = var.user_email
 
 	source = "./k8s_infrastructure"
