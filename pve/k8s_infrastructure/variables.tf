@@ -1,6 +1,12 @@
 #############################################################
 # Kubernetes variables
 #############################################################
+variable "default_time_zone" {
+  description = "Time zone that will be used on Proxmox nodes"
+  type        = string
+  default     = "UTC"
+}
+
 variable "k8s_config_file_path" {
   type = string
   description = "K8s configuration file path"
@@ -25,6 +31,15 @@ variable "user_email" {
 variable "domain_name" {
   description = "Domain name"
   type = string
+}
+
+variable "dns_servers" {
+  description = "List of external DNS Servers"
+  type = list(string)
+  default = [
+    "1.1.1.1",
+    "8.8.8.8",
+  ]
 }
 
 variable "cloudflare_api_token" {

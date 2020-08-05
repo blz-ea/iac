@@ -70,7 +70,7 @@ variable "domain_name" {
 }
 
 variable "dns_servers" {
-  description = "List of DNS Servers"
+  description = "List of external DNS Servers"
   type = list(string)
   default = [
     "1.1.1.1",

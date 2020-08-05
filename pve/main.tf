@@ -139,6 +139,8 @@ module "proxmox_k8s_infrastructure" {
 	github_oauth_client_id		 = var.github_oauth_client_id
 	github_oauth_client_secret   = var.github_oauth_client_secret
 	user_email 					 = var.user_email
+	default_time_zone			 = var.default_time_zone
+	dns_servers					 = var.dns_servers
 
 	source = "./k8s_infrastructure"
 }

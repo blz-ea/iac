@@ -1,6 +1,8 @@
 #############################################################
 # Kubernetes variables
 #############################################################
+# Time zone that will be used on Proxmox nodes
+default_time_zone = "UTC"
 
 # IP range that Metallb will use for Load Balancers
 metallb_ip_range = "192.168.1.100-192.168.1.200"
@@ -14,6 +16,11 @@ user_email = "deploy@example.com"
 # Domain variables
 #############################################################
 domain_name = "example.com"
+
+dns_servers = [
+  "1.1.1.1",
+  "8.8.8.8"
+]
 
 # Cloudflare API token
 cloudflare_api_token = ""
