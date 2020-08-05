@@ -19,7 +19,8 @@ locals {
 
   worker_node_provisioner = [
     "sudo add-apt-repository ppa:gluster/glusterfs-7 -y",
-    "sudo apt install glusterfs-client - y"
+    "sudo apt install glusterfs-client - y",
+    "sudo apt install nfs-common -y",
   ]
 
 }
