@@ -114,6 +114,15 @@ variable "user_ssh_public_key_location" {
 }
 
 #############################################################
+# Packer variables
+#############################################################
+variable "packer_default_cores" {
+  description = "Amount of CPU cores that will be allocated to a VM"
+  type = number
+  default = 2
+}
+
+#############################################################
 # Kubernetes Cluster variables
 #############################################################
 variable "k8s_vm_provisioner_user_public_keys" {
@@ -130,6 +139,12 @@ variable "k8s_vm_dns" {
 #############################################################
 # Kubernetes Cluster  - HAProxy load balancer variables
 #############################################################
+variable "k8s_vm_haproxy_count" {
+  description = "Number of VMs for Haproxy"
+  type        = number
+  default     = 0
+}
+
 variable "k8s_vm_haproxy_vip" {
   description = "IP address that will be used by keepalived (e.g 192.168.1.2)"
   type = string
@@ -173,6 +188,12 @@ variable "k8s_vm_haproxy_proxmox_datastore_id" {
 #############################################################
 # Kubernetes Cluster  - Master Node variables
 #############################################################
+variable "k8s_vm_master_count" {
+  description = "Number of Master Nodes"
+  type        = number
+  default     = 3
+}
+
 variable "k8s_vm_master_clone_id" {
   description = "VM template id to clone from"
   type = number
@@ -209,17 +230,14 @@ variable "k8s_vm_master_proxmox_datastore_id" {
 }
 
 #############################################################
-# Packer variables
-#############################################################
-variable "packer_default_cores" {
-  description = "Amount of CPU cores that will be allocated to a VM"
-  type = number
-  default = 2
-}
-
-#############################################################
 # Kubernetes Cluster  - Worker Node variables
 #############################################################
+variable "k8s_vm_worker_count" {
+  description = "Number of Worker Nodes"
+  type        = number
+  default     = 3
+}
+
 variable "k8s_vm_worker_clone_id" {
   description = "VM template id to clone from"
   type = number
@@ -263,6 +281,28 @@ variable "k8s_metallb_ip_range" {
   description = "IP range that will be used by Metallb"
   type = string
 }
+
+# Storage
+# NFS Server
+variable "k8s_nfs_default_storage_class" {
+  type = bool
+  description = "Enables NFS Server as default Storage Class provisioner"
+  default = false
+}
+
+variable "k8s_nfs_server_address" {
+  type = string
+  description = "NFS server IP/Name"
+  default = ""
+}
+
+# Gluster Server
+variable "k8s_gluster_cluster_endpoints" {
+  type = list(string)
+  default = []
+  description = "List of Gluster cluster endpoints"
+}
+
 
 #############################################################
 # Bastion Host variables

@@ -81,6 +81,7 @@ module "proxmox_k8s_cluster" {
 	vm_dns							= var.k8s_vm_dns
 
 	# Haproxy nodes
+	vm_haproxy_count				= var.k8s_vm_haproxy_count
 	vm_haproxy_vip  				= var.k8s_vm_haproxy_vip
 	vm_haproxy_clone_id				= var.k8s_vm_haproxy_clone_id
 	vm_haproxy_cpu_cores 			= var.k8s_vm_haproxy_cpu_cores
@@ -92,6 +93,7 @@ module "proxmox_k8s_cluster" {
 	vm_haproxy_proxmox_datastore_id = var.k8s_vm_haproxy_proxmox_datastore_id
 
 	# Master Nodes
+	vm_master_count					= var.k8s_vm_master_count
 	vm_master_clone_id				= var.k8s_vm_master_clone_id
 	vm_master_cpu_cores 			= var.k8s_vm_master_cpu_cores
 	vm_master_cpu_sockets 			= var.k8s_vm_master_cpu_sockets
@@ -102,6 +104,7 @@ module "proxmox_k8s_cluster" {
 	vm_master_proxmox_datastore_id 	= var.k8s_vm_master_proxmox_datastore_id
 
 	# Worker Nodes
+	vm_worker_count					= var.k8s_vm_worker_count
 	vm_worker_clone_id				= var.k8s_vm_worker_clone_id
 	vm_worker_cpu_cores 			= var.k8s_vm_worker_cpu_cores
 	vm_worker_cpu_sockets 			= var.k8s_vm_worker_cpu_sockets
@@ -124,7 +127,10 @@ module "proxmox_k8s_infrastructure" {
 	metallb_ip_range 			= var.k8s_metallb_ip_range
 	cloudflare_api_token 		= var.cloudflare_api_token
 	cloudflare_account_email 	= var.cloudflare_account_email
-	domain_name 	 			= var.domain_name
+	cloudflare_zone_name		= var.domain_name
+	nfs_default_storage_class	= var.k8s_nfs_default_storage_class
+	nfs_server_address 			= var.k8s_nfs_server_address
+	gluster_cluster_endpoints	= var.k8s_gluster_cluster_endpoints
 
 	k8s_config_file_path 	= module.proxmox_k8s_cluster.k8s_config_file_path
 	source = "./k8s_infrastructure"

@@ -84,6 +84,8 @@ k8s_vm_dns = ""
 #############################################################
 # Kubernetes Cluster - HAProxy load balancer variables
 #############################################################
+# Number of VMs for Haproxy
+k8s_vm_haproxy_count = 0
 
 # IP address that will be used by keepalived (e.g 192.168.1.2)
 k8s_vm_haproxy_vip = ""
@@ -109,6 +111,8 @@ k8s_vm_haproxy_proxmox_datastore_id = "local-lvm"
 #############################################################
 # Kubernetes Cluster - Master Node variables
 #############################################################
+# Number of Master Nodes
+k8s_vm_master_count = 3
 
 # VM id to clone from
 k8s_vm_master_clone_id = 0
@@ -131,6 +135,8 @@ k8s_vm_master_proxmox_datastore_id = "local-lvm"
 #############################################################
 # Kubernetes Cluster - Worker Node variables
 #############################################################
+# Number of Worker Nodes
+k8s_vm_worker_count = 3
 
 # VM id to clone from
 k8s_vm_worker_clone_id = 0
@@ -156,6 +162,17 @@ k8s_vm_worker_proxmox_datastore_id = "local-lvm"
 # IP range that will be used by Metallb
 # Reference: https://metallb.universe.tf/configuration/
 k8s_metallb_ip_range = "192.168.1.100-192.168.1.200"
+
+# Storage
+# NFS Server
+# Enables NFS Server as default Storage Class provisioner
+k8s_nfs_default_storage_class = false
+
+# NFS server IP/Name
+k8s_nfs_server_address = "192.168.1.1"
+
+# List of Gluster cluster endpoints
+k8s_gluster_cluster_endpoints = ["192.168.1.1", "192.168.1.2"]
 
 #############################################################
 # Bastion Host variables
@@ -214,4 +231,3 @@ bastion_drone_server_user_filter = ""
 
 # Create user Administrator
 bastion_drone_server_user_admin = ""
-

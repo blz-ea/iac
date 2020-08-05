@@ -101,7 +101,7 @@ variable "vm_haproxy_vip" {
 variable "vm_haproxy_count" {
   description = "Number of VMs for Haproxy"
   type        = number
-  default     = 2
+  default     = 0
 }
 
 variable "vm_haproxy_proxmox_node_name" {

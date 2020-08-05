@@ -7,8 +7,6 @@ keys/*
 *.swp
 
 packer_cache
-vars/*
-!vars/default*.yml
 
 # Local .terraform directories
 **/.terraform/*
@@ -46,3 +44,4 @@ inventory/*
 .packer-*
 *.prod.tfvars
 terraform.tfstate.d
+pve/keys/*
