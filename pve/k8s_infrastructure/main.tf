@@ -253,10 +253,12 @@ locals {
     config = {
       rootDomain = var.domain_name
       policy = [
+        # K8s Dashboard
         {
           from = "https://k8s-dashboard.${var.domain_name}"
           to = "https://kubernetes-dashboard.kube-system.svc.cluster.local"
           //preserve_host_header = true
+          // allow_websockets: true
           // TODO: Remove static list of users, replace it with centralized solution
           allowed_users = [
             var.user_email
@@ -265,6 +267,14 @@ locals {
           set_request_headers = {
             Authorization = "Bearer ${var.k8s_dashboard_token}"
           }
+        },
+        # PiHole
+        {
+          from = "https://pihole.${var.domain_name}"
+          to = "http://pihole-service.default.svc.cluster.local"
+          allowed_users = [
+            var.user_email
+          ]
         },
       ]
     }

@@ -55,3 +55,12 @@ github_oauth_client_secret = ""
 
 # K8s dashboard token
 k8s_dashboard_token = ""
+
+#############################################################
+# Services
+#############################################################
+# Enable Bitwarden
+bitwarden_enabled = true
+
+# Enable PiHole
+pihole_enabled = true

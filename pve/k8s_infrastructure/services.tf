@@ -6,6 +6,7 @@ locals {
 # Ref: https://github.com/dani-garcia/bitwarden_rs
 #############################################################
 resource "kubernetes_ingress" "bitwarden_rs_ingress" {
+  count = var.bitwarden_enabled ? 1 : 0
   metadata {
     name = "bitwarden-rs-ingress"
     annotations = {
@@ -54,6 +55,7 @@ resource "kubernetes_ingress" "bitwarden_rs_ingress" {
 
 
 resource "kubernetes_service" "bitwarden_rs_service" {
+  count = var.bitwarden_enabled ? 1 : 0
   metadata {
     name = "bitwarden-rs-service"
   }
@@ -79,6 +81,7 @@ resource "kubernetes_service" "bitwarden_rs_service" {
 }
 
 resource "kubernetes_stateful_set" "bitwarden_rs" {
+  count = var.bitwarden_enabled ? 1 : 0
   metadata {
     name = "bitwarden-rs"
     labels = {
@@ -173,6 +176,7 @@ resource "kubernetes_stateful_set" "bitwarden_rs" {
 # Ref: https://github.com/pi-hole/docker-pi-hole/
 #############################################################
 resource "kubernetes_service" "pihole_dns_lb" {
+  count = var.pihole_enabled ? 1 : 0
   metadata {
     name = "pihole-dns-service"
   }
@@ -193,6 +197,7 @@ resource "kubernetes_service" "pihole_dns_lb" {
 }
 
 resource "kubernetes_service" "pihole-service" {
+  count = var.pihole_enabled ? 1 : 0
   metadata {
     name = "pihole-service"
   }
@@ -233,12 +238,17 @@ resource "kubernetes_service" "pihole-service" {
 }
 
 resource "kubernetes_ingress" "pihole_ingress" {
+  count = var.pihole_enabled ? 1 : 0
   metadata {
     name = "pihole-ingress"
     annotations = {
       "nginx.ingress.kubernetes.io/rewrites-target" = "/admin"
       "nginx.ingress.kunernetes.io/ssl-redirect"    = "false"
       "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
+
+      "nginx.ingress.kubernetes.io/auth-url"          = "https://forwardauth.${var.domain_name}/verify?uri=$scheme://$host$request_uri"
+      "nginx.ingress.kubernetes.io/auth-signin"       =  "https://forwardauth.${var.domain_name}?uri=$scheme://$host$request_uri"
+
     }
   }
   spec {
@@ -247,11 +257,6 @@ resource "kubernetes_ingress" "pihole_ingress" {
         "pihole.${var.domain_name}",
       ]
       secret_name = "pihole-${local.dashed_domain_name}"
-    }
-
-    backend {
-      service_name = "pihole-service"
-      service_port = 80
     }
 
     rule {
@@ -272,6 +277,7 @@ resource "kubernetes_ingress" "pihole_ingress" {
 
 # Pihole's post installation script
 resource "kubernetes_config_map" "pihole_post_init_script" {
+  count = var.pihole_enabled ? 1 : 0
   metadata {
     name = "pihole-post-init-script"
   }
@@ -281,6 +287,7 @@ resource "kubernetes_config_map" "pihole_post_init_script" {
 }
 
 resource "kubernetes_deployment" "pihole" {
+  count = var.pihole_enabled ? 1 : 0
 
   metadata {
     name = "pihole"

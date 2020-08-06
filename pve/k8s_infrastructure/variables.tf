@@ -105,3 +105,18 @@ variable "k8s_dashboard_token" {
   description = "K8s dashboard token"
   default = ""
 }
+
+#############################################################
+# Services
+#############################################################
+variable "bitwarden_enabled" {
+  type = bool
+  description = "Enable Bitwarden"
+  default = true
+}
+
+variable "pihole_enabled" {
+  type = bool
+  description = "Enable PiHole"
+  default = true
+}
