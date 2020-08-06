@@ -22,7 +22,7 @@ PVE Manager Version: 6.2-6
 ## Folder Structure ##
 - [`main`](./main.tf) - Main entry point
 - [`k8s_cluster`](./k8s_cluster) - Kubernetes cluster based on [Kubespray](https://github.com/kubernetes-sigs/kubespray)
-- [`k8s Infrastructure`](./k8s_infrastructure) - Kubernetes infrastructure
+- [`k8s infrastructure`](./k8s_infrastructure) - Kubernetes infrastructure
 - [`packer`](./packer.tf) - Packer deployments
     - [`templates`](./templates) - Packer templates
 - [`bastion`](./bastion.tf) - Bastion Host
@@ -30,6 +30,10 @@ PVE Manager Version: 6.2-6
 - [`file`](./file.tf) - File resources (e.g. iso, lxc images)
 - [`pve_nodes.yml`](./pve_nodes.yml)  - Additional configuration applied to Proxmox node
 - [`requirements.yml`](./requirements.yml) - Local environment requirements (Ansible playbook)
+
+## Current setup ##
+
+![map](./diagram/diagram.png)
 
 ## Quick start ##
 
