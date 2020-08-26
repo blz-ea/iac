@@ -11,6 +11,7 @@ https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
 https://raw.githubusercontent.com/durablenapkin/scamblocklist/master/hosts.txt
 https://gitlab.com/ookangzheng/dbl-oisd-nl/raw/master/dbl.txt
 https://sysctl.org/cameleon/hosts
+https://block.energized.pro/ultimate/formats/hosts.txt
 )
 
 declare -a adLists_disabled=(
