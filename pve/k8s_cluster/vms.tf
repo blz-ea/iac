@@ -21,6 +21,7 @@ locals {
     "sudo add-apt-repository ppa:gluster/glusterfs-7 -y",
     "sudo apt install glusterfs-client - y",
     "sudo apt install nfs-common -y",
+    "sudo apt install ceph-common -y",
   ]
 
 }
