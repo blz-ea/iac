@@ -239,3 +239,18 @@ github_oauth_client_secret = ""
 
 # K8s dashboard token
 k8s_dashboard_token = ""
+
+#############################################################
+# Variables related to various services
+#############################################################
+# Deemix ARL. Authentication string obtained from cookies
+deemix_arl = ""
+
+# NordVPN username
+nordvpn_username = ""
+
+# NordVPN password
+nordvpn_password = ""
+
+# NordVPN Server to connect (e.g. us5839)
+nordvpn_server = ""

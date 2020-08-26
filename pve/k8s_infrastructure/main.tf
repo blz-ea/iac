@@ -276,6 +276,14 @@ locals {
             var.user_email
           ]
         },
+        # qBittorrent
+        {
+          from = "https://qbittorrent.${var.domain_name}"
+          to = "http://qbittorrent-service.media.svc.cluster.local"
+          allowed_users = [
+            var.user_email
+          ]
+        },
       ]
     }
 

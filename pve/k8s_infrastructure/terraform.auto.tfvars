@@ -58,6 +58,23 @@ bitwarden_enabled = true
 # Enable PiHole
 pihole_enabled = true
 
+# Enable Deemix
+deemix_enabled = true
+
+# Deemix ARL. Authentication string obtained from cookies
+deemix_arl = ""
+
+# Enable qBittorrent
+qbittorrent_enabled = true
+
+# NordVPN username
+nordvpn_username = ""
+
+# NordVPN password
+nordvpn_password = ""
+
+# NordVPN Server to connect (e.g. us5839)
+nordvpn_server = ""
 
 
 # Ceph admin secret. To get the key: > ceph auth get-key client.admin

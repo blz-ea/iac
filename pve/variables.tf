@@ -435,3 +435,31 @@ variable "k8s_dashboard_token" {
   description = "K8s dashboard token"
   default = ""
 }
+
+#############################################################
+# K8s infrastructure variables
+#############################################################
+variable "deemix_arl" {
+  type = string
+  description = "Deemix ARL. Authentication string obtained from cookies"
+  default = ""
+}
+
+variable "nordvpn_username" {
+  type = string
+  description = "NordVPN username"
+  default = ""
+}
+
+variable "nordvpn_password" {
+  type = string
+  description = "NordVPN password"
+  default = ""
+}
+
+variable "nordvpn_server" {
+  type = string
+  description = "NordVPN Server to connect (e.g. us5839)"
+  default = ""
+}
+}

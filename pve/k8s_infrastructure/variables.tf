@@ -107,6 +107,55 @@ variable "pihole_enabled" {
   description = "Enable PiHole"
   default = true
 }
+
+variable "radarr_enabled" {
+  type = bool
+  description = "Enable Radarr"
+  default = true
+}
+
+variable "sonarr_enabled" {
+  type = bool
+  description = "Enable Sonarr"
+  default = true
+}
+
+variable "deemix_enabled" {
+  type = bool
+  description = "Enable Deemix"
+  default = true
+}
+
+variable "deemix_arl" {
+  type = string
+  description = "Deemix ARL. Authentication string obtained from cookies"
+  default = ""
+}
+
+variable "qbittorrent_enabled" {
+  type = bool
+  description = "Enable qBittorrent"
+  default = true
+}
+
+variable "nordvpn_username" {
+  type = string
+  description = "NordVPN username"
+  default = ""
+}
+
+variable "nordvpn_password" {
+  type = string
+  description = "NordVPN password"
+  default = ""
+}
+
+variable "nordvpn_server" {
+  type = string
+  description = "NordVPN Server to connect (e.g. us5839)"
+  default = ""
+}
+
 variable "ceph_admin_secret" {
   type = string
   description = "Ceph admin secret. To get the key: > ceph auth get-key client.admin"

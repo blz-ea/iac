@@ -140,6 +140,12 @@ module "proxmox_k8s_infrastructure" {
 	default_time_zone			 = var.default_time_zone
 	dns_servers					 = var.dns_servers
 
+	// TODO: Find a better way to pass password related variables
+	deemix_arl					 = var.deemix_arl
+	nordvpn_username			 = var.nordvpn_username
+	nordvpn_password			 = var.nordvpn_password
+	nordvpn_server				 = var.nordvpn_server
+
 	ceph_admin_secret			 = var.ceph_admin_secret
 	ceph_user_secret			 = var.ceph_user_secret
 	ceph_monitors				 = var.ceph_monitors
