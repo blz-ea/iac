@@ -1,0 +1,15 @@
+# Default values for cert-manager-cluster-issuer.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+# Ref: https://cert-manager.io/docs/usage/certificate/
+
+name: "certificate-prod"
+namespace: "default"
+secretName: "certificate-prod-secret"
+dnsNames: []
+ipAddresses: []
+uriSANs: []
+issuerRef:
+  name: "letsencrypt-prod"
+  kind: "ClusterIssuer" # or Issuer
+  group: "cert-manager.io"
