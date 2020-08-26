@@ -254,3 +254,18 @@ nordvpn_password = ""
 
 # NordVPN Server to connect (e.g. us5839)
 nordvpn_server = ""
+
+# Set MongoDB root password during first run
+mongodb_root_password = ""
+
+# Set Redis password during first run
+redis_password = ""
+
+# Set PostgreSQL password during first run
+postgresql_password = "postgresql"
+
+# pgAdmin default email
+pgadmin_default_email = "example@domain.com"
+
+# pgAdmin default password
+pgadmin_default_password = "pgadmin"

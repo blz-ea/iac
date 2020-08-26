@@ -360,10 +360,35 @@ variable "bastion_image" {
   default     = "ubuntu-19-10-x64"
 }
 
+variable "bastion_service_frp_bind_port" {
+  description = "FRP Proxy bind port"
+  type        = number
+  default     = 7000
+}
+
+variable "bastion_service_frp_token" {
+  description = "FRP Proxy token"
+  type        = string
+  default     = ""
+}
+
+variable "bastion_service_frp_vhost_http_port" {
+  description = "FRP Proxy virtual host port"
+  type        = number
+  default     = 8080
+}
+
 #############################################################
 # Bastion Host - Container variables
 #############################################################
-variable "bastion_traefik_container_file_cfg" {
+variable "bastion_traefik_container_file_cfg_static" {
+  description = "Traefik container's static file configuration"
+  # Reference: https://docs.traefik.io/reference/static-configuration/file/
+  type = any
+  default = {}
+}
+
+variable "bastion_traefik_container_file_cfg_dynamic" {
   description = "Traefik container's file configuration"
   # Reference: https://docs.traefik.io/reference/dynamic-configuration/file/
   type = map(any)
@@ -462,4 +487,70 @@ variable "nordvpn_server" {
   description = "NordVPN Server to connect (e.g. us5839)"
   default = ""
 }
+
+variable "mongodb_root_password" {
+  type = string
+  description = "Set MongoDB root password during first run"
+  default = ""
+}
+
+variable "redis_password" {
+  type = string
+  description = "Set Redis password during first run"
+  default = ""
+}
+
+variable "postgresql_password" {
+  type = string
+  description = "Set PostgreSQL password during first run"
+  default = "postgresql"
+}
+
+variable "pgadmin_default_email" {
+  type = string
+  description = "pgAdmin default email"
+  default = "example@domain.com"
+}
+
+variable "pgadmin_default_password" {
+  type = string
+  description = "pgAdmin default password"
+  default = "pgadmin"
+}
+
+variable "ceph_admin_secret" {
+  type = string
+  description = "Ceph admin secret. To get the key: > ceph auth get-key client.admin"
+  default = ""
+}
+
+variable "ceph_user_secret" {
+  type = string
+  # To create a user account: > ceph --cluster ceph auth get-or-create client.kube mon 'allow r' osd 'allow rwx pool=<pool_name>>'
+  description = "Ceph user secret. To get user account key: > ceph --cluster ceph auth get-key client.kube"
+  default = ""
+}
+
+variable "ceph_monitors" {
+  type = string
+  description = "Comma separated list of Ceph Monitors (e.g. 192.168.88.1:6789)"
+  default = ""
+}
+
+variable "ceph_pool_name" {
+  type = string
+  description = "Ceph pool name that will be used by StorageClass"
+  default = ""
+}
+
+variable "ceph_admin_id" {
+  type = string
+  description = "Ceph Admin ID"
+  default = "admin"
+}
+
+variable "ceph_user_id" {
+  type = string
+  description = "Ceph User ID"
+  default = "kube"
 }

@@ -146,6 +146,12 @@ module "proxmox_k8s_infrastructure" {
 	nordvpn_password			 = var.nordvpn_password
 	nordvpn_server				 = var.nordvpn_server
 
+	mongodb_root_password		 = var.mongodb_root_password
+	redis_password				 = var.redis_password
+	postgresql_password			 = var.postgresql_password
+	pgadmin_default_email		 = var.pgadmin_default_email
+	pgadmin_default_password	 = var.pgadmin_default_password
+
 	ceph_admin_secret			 = var.ceph_admin_secret
 	ceph_user_secret			 = var.ceph_user_secret
 	ceph_monitors				 = var.ceph_monitors

@@ -156,6 +156,66 @@ variable "nordvpn_server" {
   default = ""
 }
 
+variable "mongodb_enabled" {
+  type = bool
+  description = "Enable MongoDB"
+  default = true
+}
+
+variable "mongodb_root_password" {
+  type = string
+  description = "Set MongoDB root password during first run"
+  default = ""
+}
+
+variable "redis_enabled" {
+  type = bool
+  description = "Enable Redis"
+  default = true
+}
+
+variable "redis_password" {
+  type = string
+  description = "Set Redis password during first run"
+  default = ""
+}
+
+variable "postgresql_enabled" {
+  type = bool
+  description = "Enable PostgreSQL"
+  default = true
+}
+
+variable "postgresql_password" {
+  type = string
+  description = "Set PostgreSQL password during first run"
+  default = "postgresql"
+}
+
+variable "pgadmin_enabled" {
+  type = bool
+  description = "Enable pgAdmin. WebUI for PostgreSQL"
+  default = true
+}
+
+variable "pgadmin_default_email" {
+  type = string
+  description = "pgAdmin default email"
+  default = "example@domain.com"
+}
+
+variable "pgadmin_default_password" {
+  type = string
+  description = "pgAdmin default password"
+  default = "pgadmin"
+}
+
+variable "elasticsearch_enabled" {
+  type = bool
+  description = "Enable Elasticsearch"
+  default = true
+}
+
 variable "ceph_admin_secret" {
   type = string
   description = "Ceph admin secret. To get the key: > ceph auth get-key client.admin"

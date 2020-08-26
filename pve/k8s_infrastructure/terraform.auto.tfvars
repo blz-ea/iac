@@ -76,6 +76,35 @@ nordvpn_password = ""
 # NordVPN Server to connect (e.g. us5839)
 nordvpn_server = ""
 
+# Enable MongoDB
+mongodb_enabled = true
+
+# Set MongoDB root password. Executes only during first run
+mongodb_root_password = ""
+
+# Set MongoDB root password during first run
+mongodb_root_password = ""
+
+# Enable Redis
+redis_enabled = true
+
+# Set Redis password during first run
+redis_password = ""
+
+# Enable PostgreSQL
+postgresql_enabled = true
+
+# Set PostgreSQL password during first run
+postgresql_password = "postgresql"
+
+# Enable pgAdmin. WebUI for PostgreSQL
+pgadmin_enabled = true
+
+# pgAdmin default email
+pgadmin_default_email = "example@domain.com"
+
+# pgAdmin default password
+pgadmin_default_password = "pgadmin"
 
 # Ceph admin secret. To get the key: > ceph auth get-key client.admin
 ceph_admin_secret = ""
