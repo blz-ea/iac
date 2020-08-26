@@ -7,18 +7,6 @@
   tags: 
     - mosh
 
-- name: Configure ufw rules for Mosh
-  become: yes
-  ufw: 
-    rule={{ item.rule }} 
-    port={{ item.port }} 
-    proto={{ item.proto }}
-  with_items:
-  - { rule: 'allow', port: '60000:61000', proto: 'udp' }
-  tags:
-    - mosh
-    - fw
-
 # Mosh throws an error without below steps
 # perl: warning: Setting locale failed.
 # perl: warning: Please check that your locale settings:
