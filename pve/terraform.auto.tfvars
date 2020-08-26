@@ -269,3 +269,21 @@ pgadmin_default_email = "example@domain.com"
 
 # pgAdmin default password
 pgadmin_default_password = "pgadmin"
+
+# Ceph admin secret. To get the key: > ceph auth get-key client.admin
+ceph_admin_secret = ""
+
+# Ceph user secret. To get user account key: > ceph --cluster ceph auth get-key client.kube
+ceph_user_secret = ""
+
+# Comma separated list of Ceph Monitors (e.g. 192.168.88.1:6789)"
+ceph_monitors = ""
+
+# Existing Ceph pool name that will be used by StorageClass
+ceph_pool_name = ""
+
+# Ceph Admin ID
+ceph_admin_id = "admin"
+
+# Ceph User ID
+ceph_user_id = "kube"
