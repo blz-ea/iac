@@ -10,6 +10,13 @@ resource "proxmox_virtual_environment_file" "virtio-win" {
     source_file {
         path = "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.173-9/virtio-win.iso"
     }
+
+    lifecycle {
+        ignore_changes = [
+            source_file,
+        ]
+    }
+
 }
 
 resource "proxmox_virtual_environment_file" "centos-7-x86-64-minimal-1908" {
@@ -19,8 +26,15 @@ resource "proxmox_virtual_environment_file" "centos-7-x86-64-minimal-1908" {
     node_name    = local.proxmox_nodes.node1.name
 
     source_file {
-        path = "http://mirror.atlanticmetro.net/centos/7.7.1908/isos/x86_64/CentOS-7-x86_64-Minimal-1908.iso"
+        path = "https://mirrors.oit.uci.edu/centos/7.7.1908/isos/x86_64/CentOS-7-x86_64-Minimal-1908.iso"
     }
+
+    lifecycle {
+        ignore_changes = [
+            source_file,
+        ]
+    }
+
 }
 
 resource "proxmox_virtual_environment_file" "ubuntu-18-04-4-server-amd64" {
@@ -32,6 +46,7 @@ resource "proxmox_virtual_environment_file" "ubuntu-18-04-4-server-amd64" {
     source_file {
         path = "http://cdimage.ubuntu.com/releases/bionic/release/ubuntu-18.04.4-server-amd64.iso"
     }
+
 }
 
 resource "proxmox_virtual_environment_file" "ubuntu-19-10-server-amd64" {
