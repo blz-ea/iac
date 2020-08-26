@@ -1,0 +1,24 @@
+---
+- name: Add Helm signing key
+  become: yes
+  apt_key:
+    url: https://baltocdn.com/helm/signing.asc
+    state: present
+  tags:
+    - helm
+
+- name: Add Helm to sources
+  become: yes
+  apt_repository:
+    repo: deb https://baltocdn.com/helm/stable/debian/ all main
+    state: present
+  tags:
+    - helm
+
+- name: Install Helm package
+  become: yes
+  apt:
+    pkg: ['helm']
+    state: latest
+  tags:
+    - helm

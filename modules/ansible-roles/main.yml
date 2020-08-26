@@ -1,0 +1,10 @@
+---
+- hosts: all
+  pre_tasks:
+    - name: Run Pre-tasks
+      include_role:
+        name: pre_tasks
+      tags:
+        - always
+  roles:
+    - { role: 'frp', tags: 'frp' }
