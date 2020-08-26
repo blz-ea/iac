@@ -9,6 +9,11 @@
       tags:
         - always
   tasks:
+    - name: Install OpenSSL package
+      package:
+        name: openssl
+        state: present
+
     - name: Install Terraform
       include_role:
         name: terraform
@@ -96,35 +101,16 @@
         - proxmox
         - plugins
 
-    - name: Get latest kubectl release information
-      uri:
-        url: "https://storage.googleapis.com/kubernetes-release/release/stable.txt"
-        method: GET
-        status_code: 200
-        body_format: raw
-        return_content: true
-      register: kubectl_stable_response
+    - name: Install Kubectl
+      include_role:
+        name: kubectl
       tags:
-        - k8s
         - kubectl
 
-    - name: Delete kubectl executable
-      become: yes
-      file: path=/usr/local/bin/kubectl state=absent
+    - name: Install Helm
+      include_role:
+        name: helm
       tags:
-        - k8s
-        - kubectl
-
-    - name: Get latest kubectl release
-      become: yes
-      uri:
-        url: "https://storage.googleapis.com/kubernetes-release/release/{{ kubectl_stable_response.content[:-1] }}/bin/linux/amd64/kubectl"
-        method: GET
-        status_code: 200
-        dest: "/usr/local/bin/kubectl"
-        mode: +x
-      tags:
-        - k8s
-        - kubectl
+        - helm
 
 

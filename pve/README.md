@@ -18,6 +18,8 @@ PVE Manager Version: 6.2-6
 - **Ansible**
 - **Access to Proxmox API**
 - **Access to Proxmox via SSH**
+- **kubectl**
+- **Helm**
 
 ## Folder Structure ##
 - [`main`](./main.tf) - Main entry point
@@ -51,6 +53,7 @@ or manually install
 - [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 - [Terraform Proxmox Plugin](https://github.com/danitso/terraform-provider-proxmox/releases)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+- [Helm](https://helm.sh/docs/intro/install/)
 
 ### Step 3: Start Deployment ###
 
