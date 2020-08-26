@@ -13,14 +13,14 @@ variable "labels" {
   default = []
 }
 
-variable "file_cfg" {
+variable "file_cfg_dynamic" {
   type = map(any)
   default = {}
 }
 
-variable "command" {
-  type = list(string)
-  default = []
+variable "file_cfg_static" {
+  type = any
+  default = {}
 }
 
 variable "ports" {

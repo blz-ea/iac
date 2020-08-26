@@ -2,39 +2,9 @@ locals {
   container_name      = var.container_name
   
   default_labels = [
-    "org.opencontainers.image.description=A modern reverse-proxy", # <- added by traefik
-    "org.opencontainers.image.documentation=https://docs.traefik.io",
-    "org.opencontainers.image.title=Traefik",  
-    "org.opencontainers.image.url=https://traefik.io",
-    "org.opencontainers.image.vendor=Containous",
-    "org.opencontainers.image.version=v2.2.1",
     "traefik.enable=true",
-    # Global http to https redirect
-    "traefik.http.middlewares.https-redirect.redirectScheme.scheme=https",
-    "traefik.http.routers.redirect.entryPoints=http",
-    "traefik.http.routers.redirect.rule=hostregexp(`{host:.+}`)",
-    "traefik.http.routers.redirect.middlewares=https-redirect",
-    "traefik.http.routers.redirect.service=noop@internal",
-    "traefik.http.routers.redirect.priority=1",
   ]
 
-  default_command = [
-    "--log.level=ERROR",
-    "--global.sendAnonymousUsage=false",
-    "--serversTransport.insecureSkipVerify=true",
-    "--accessLog.bufferingSize=100",
-    "--api.dashboard=true",
-
-    "--metrics=true",
-    "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0",
-    "--metrics.prometheus.addEntryPointsLabels=true",
-    "--metrics.prometheus.addServicesLabels=true",
-    "--metrics.prometheus.manualRouting=true",
-  ]
-  
-  default_env = [
-    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", # <- added by traefik
-  ]
 }
 
 # Passed in dependencies
@@ -59,6 +29,7 @@ resource "docker_volume" "volume" {
 resource "docker_container" "container" {
   name = local.container_name
   image = docker_image.image.latest
+  restart = "always"
 
   volumes {
     volume_name     = docker_volume.volume.name
@@ -73,14 +44,18 @@ resource "docker_container" "container" {
   }
 
   upload {
-     content       = yamlencode(var.file_cfg)
-     source_hash   = sha1(yamlencode(var.file_cfg))
+     content       = yamlencode(var.file_cfg_dynamic)
+     source_hash   = sha1(yamlencode(var.file_cfg_dynamic))
      file          = "/etc/conf.d/file_cfg.yml"
   }
 
-  command = concat(["traefik"], distinct(concat(var.command, local.default_command)))
+  upload {
+     content       = yamlencode(var.file_cfg_static)
+     source_hash   = sha1(yamlencode(var.file_cfg_static))
+     file          = "/etc/traefik/traefik.yml"
+  }
 
-  env = distinct(concat(var.env, local.default_env))
+  env = var.env
 
   dynamic "ports" {
     for_each = var.ports
@@ -103,6 +78,13 @@ resource "docker_container" "container" {
     content {
       name = networks_advanced.value
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      labels,
+      env,
+    ]
   }
 
   depends_on = [

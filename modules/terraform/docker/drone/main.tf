@@ -42,6 +42,7 @@ resource "docker_volume" "volume" {
 resource "docker_container" "container" {
   name = local.container_name
   image = docker_image.image.latest
+  restart = "always"
 
   volumes {
     volume_name     = docker_volume.volume.name
