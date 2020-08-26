@@ -1,7 +1,25 @@
+provider "random" {
+  version = "2.3.0"
+}
+
+provider "kubernetes" {
+  config_path = var.k8s_config_file_path
+}
+
+provider "helm" {
+  kubernetes {
+    config_path = var.k8s_config_file_path
+  }
+}
+
 locals {
-  helm_chart_path = pathexpand("${path.module}/../../modules/helm")
-  metallb_namespace       = kubernetes_namespace.metallb_system.metadata[0].name
-  cert_manager_namespace  = kubernetes_namespace.cert_manager.metadata[0].name
+  helm_charts_path        = pathexpand("${path.module}/../../modules/helm")
+  dashed_domain_name      = replace(var.domain_name, ".", "-")
+  metallb_namespace       = kubernetes_namespace.metallb_system.metadata.0.name
+  cert_manager_namespace  = kubernetes_namespace.cert_manager.metadata.0.name
+  ingress_nginx_namespace = kubernetes_namespace.ingress_nginx.metadata.0.name
+
+  cert_manager_cluster_issuer_name = "letsencrypt-prod"
 }
 
 #############################################################
@@ -52,53 +70,87 @@ resource "helm_release" "metallb" {
 # Nginx Ingress
 # Ref: https://github.com/kubernetes/ingress-nginx
 #############################################################
-resource "helm_release" "nginx_ingress" {
-  name  = "ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart = "ingress-nginx"
+resource "kubernetes_namespace" "ingress_nginx" {
+  metadata {
+    name = "ingress-nginx"
+
+    labels = {
+      "app.kubernetes.io/name"      = "ingress-nginx"
+      "app.kubernetes.io/component" = "ingress-controller"
+    }
+  }
+}
+
+resource "helm_release" "ingress_nginx" {
+  name        = "ingress-nginx"
+  repository  = "https://kubernetes.github.io/ingress-nginx"
+  chart       = "ingress-nginx"
+  namespace   = local.ingress_nginx_namespace
 }
 
 #############################################################
 # Cert Manager
 # Ref: https://github.com/jetstack/cert-manager
 #############################################################
+locals {
+  cert_manager_helm_values = {
+    installCRDs = true,
+    podLabels = {
+      "app.kubernetes.io/name" = "cert-manager"
+    }
+    extraArgs = [
+      "--dns01-recursive-nameservers=1.1.1.1:53\\,8.8.8.8:53"
+    ]
+  }
+}
+
 resource "kubernetes_namespace" "cert_manager" {
   metadata {
     name = "cert-manager"
 
     labels = {
-      app = "cert-manager"
+      "app.kubernetes.io/name" = "cert-manager"
     }
   }
 }
 
 resource "helm_release" "cert_manager" {
-  name  = "cert-manager"
-  repository = "https://charts.jetstack.io"
-  chart = "cert-manager"
-  namespace = local.cert_manager_namespace
+  name        = "cert-manager"
+  repository  = "https://charts.jetstack.io"
+  chart       = "cert-manager"
+  namespace   = local.cert_manager_namespace
 
-  set {
-    name = "installCRDs"
-    value = "true"
+  values = [
+    yamlencode(local.cert_manager_helm_values)
+  ]
+}
+
+# Cloudflare API token
+# Used by cert manager for DNS challenges
+resource "kubernetes_secret" "cloudflare_key_secret" {
+  count = length(var.cloudflare_api_token) > 0 ? 1 : 0
+
+  metadata {
+    name      = "cloudflare-api-token-secret"
+    namespace = local.cert_manager_namespace
   }
 
-  set {
-    name = "extraArgs"
-    value = "{--dns01-recursive-nameservers=1.1.1.1:53\\,8.8.8.8:53}"
+  data = {
+    api-token = var.cloudflare_api_token
   }
+
 }
 
 // Cluster issuer resource
 resource "helm_release" "cert_manager_cluster_issuer" {
   count = length(var.cloudflare_account_email) > 0 ? 1 : 0
 
-  chart = "${local.helm_chart_path}/cert-manager-cluster-issuer"
+  chart = "${local.helm_charts_path}/cert-manager-resources/cluster-issuer"
   name = "cert-manager-cluster-issuer"
 
   set {
     name = "name"
-    value = "letsencrypt-prod"
+    value = local.cert_manager_cluster_issuer_name
   }
 
   set {
@@ -123,37 +175,105 @@ resource "helm_release" "cert_manager_cluster_issuer" {
 
   set {
     name = "dnsZones"
-    value = "{${join(",", [ var.cloudflare_zone_name ])}}"
+    value = "{${join(",", [ var.cloudflare_zone_name, "*.${var.cloudflare_zone_name}" ])}}"
   }
 
   depends_on = [
-    helm_release.cert_manager
+    helm_release.cert_manager,
+    kubernetes_secret.cloudflare_key_secret,
   ]
 
 }
 
-# Cloudflare API token
-# Used by cert manager for DNS challenges
-resource "kubernetes_secret" "cloudflare_key_secret" {
-  count = length(var.cloudflare_api_token) > 0 ? 1 : 0
-
-  metadata {
-    name = "cloudflare-api-token-secret"
-    namespace = local.cert_manager_namespace
-  }
-
-  data = {
-    api-token = var.cloudflare_api_token
-  }
-
-}
+//// Wildcard certificate
+//resource "helm_release" "cert_manager_wildcard_certificate" {
+//  count = length(var.cloudflare_account_email) > 0 ? 1 : 0
+//
+//  chart = "${local.helm_charts_path}/cert-manager-resources/certificate"
+//  name  = "cert-manager-wildcard-certificate"
+//
+//  set {
+//    name = "name"
+//    value = "letsencrypt-wildcard"
+//  }
+//
+//  set {
+//    name = "namespace"
+//    value = local.cert_manager_namespace
+//  }
+//
+//  set {
+//    name = "secretName"
+//    value = "letsencrypt-wildcard-secret"
+//  }
+//
+//  set {
+//    name = "dnsNames"
+//    value = "{${join(",", [ "*.${var.cloudflare_zone_name}" ])}}"
+//  }
+//
+//  set {
+//    name = "issuerRef.name"
+//    value = local.cert_manager_cluster_issuer_name
+//  }
+//
+//  set {
+//    name = "issuerRef.kind"
+//    value = "ClusterIssuer"
+//  }
+//
+//  depends_on = [
+//    helm_release.cert_manager,
+//  ]
+//
+//}
+//resource "kubernetes_ingress" "elasticsearch_web_ui_dejavu_ingress" {
+//  count = 1
+//  metadata {
+//    name      = "elasticsearch-ui-dejavu-ingress"
+//    namespace = local.db_namespace
+//    annotations = {
+//      "nginx.ingress.kubernetes.io/rewrites-target" = "/"
+//      "nginx.ingress.kunernetes.io/ssl-redirect"    = "false"
+//      "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
+//    }
+//  }
+//  spec {
+//    tls {
+//      hosts = [
+//        "*.${var.domain_name}",
+//      ]
+//      secret_name = local.db_namespace_certificate_name
+//    }
+//
+//    backend {
+//      service_name = "elasticsearch-ui-service"
+//      service_port = 80
+//    }
+//
+//    rule {
+//      host = "testo.${var.domain_name}"
+//      http {
+//        path {
+//          path = "/"
+//          backend {
+//            service_name = "elasticsearch-ui-service"
+//            service_port = 80
+//          }
+//        }
+//
+//      }
+//    }
+//
+//  }
+//
+//}
 
 #############################################################
 # Kubernetes Dashboard
 # Ref: https://github.com/kubernetes/dashboard
 #############################################################
-// Dashboard is installed by kubespray
-
+// Note: Dashboard is installed by kubespray
 // By default kubernetes-dashboard cluster role binding does not have access to cluster resources
 // At the moment there is no way to mutate existing resources
 // We delete existing binding a create new one with desired permissions
@@ -229,7 +349,9 @@ resource "kubernetes_ingress" "k8s_dashboard_ingress" {
 
 #############################################################
 # Pomerium
-# Ref: https://www.pomerium.io/
+# Ref:
+# https://github.com/pomerium/pomerium-helm
+# https://www.pomerium.io/
 #############################################################
 locals {
   pomerium_config = {
@@ -257,7 +379,7 @@ locals {
         {
           from = "https://k8s-dashboard.${var.domain_name}"
           to = "https://kubernetes-dashboard.kube-system.svc.cluster.local"
-          //preserve_host_header = true
+          // preserve_host_header = true
           // allow_websockets: true
           // TODO: Remove static list of users, replace it with centralized solution
           allowed_users = [
