@@ -42,6 +42,7 @@ inventory/*
 !inventory/lab
 .ansible.state
 .packer-*
-*.prod.tfvars
+!*.auto.tfvars
+*.tfvars
 terraform.tfstate.d
 pve/keys/*
