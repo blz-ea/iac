@@ -29,8 +29,6 @@
     - state == "present"
     - item.ref | d(false)
     - item.ref is regex("^refs/tags/go(\d+\.)?(\d+\.)?(\*|\d+)$")
-    - max_version | default('0') is version(item, '<')
-  no_log: true
   tags:
     - golang
 
