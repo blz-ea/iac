@@ -196,11 +196,110 @@ bastion_size = "s-1vcpu-1gb"
 bastion_image = "ubuntu-19-10-x64"
 
 # Traefik static configuration
+# Reference: https://docs.traefik.io/reference/static-configuration/file/
+bastion_traefik_container_file_cfg_static = {
+ log = {
+    level = "ERROR"
+  }
+
+  global = {
+    sendAnonymousUsage = false
+  }
+
+  serversTransport = {
+    insecureSkipVerify = true
+  }
+
+  accessLog = {
+    bufferingSize = 100
+  }
+
+  api = {
+    dashboard = true
+  }
+
+  metrics = {
+    prometheus = {
+      buckets = [0.1,0.3,1.2,5.0]
+      addEntryPointsLabels = true
+      addServicesLabels = true
+      manualRouting = true
+    }
+  }
+
+  entryPoints = {
+    http = {
+      address = ":80"
+    }
+    https = {
+      address = ":443"
+    }
+  }
+
+  providers = {
+    file = {
+      directory = "/etc/conf.d/"
+    }
+
+    docker = {
+      exposedbydefault = false
+    }
+  }
+
+  certificatesResolvers = {
+    cloudflare = {
+      acme  = {
+        email = "exampleh@example.com"
+        storage = "/letsencrypt/acme.json"
+        dnsChallenge = {
+          provider = "cloudflare"
+          delayBeforeCheck = 30
+          resolvers = [
+            "1.1.1.1:53",
+            "1.0.0.1:53",
+          ]
+        }
+      }
+    }
+  }
+
+}
+
+# FRP Proxy bind port
+bastion_service_frp_bind_port = 7000
+
+# FRP Proxy token
+bastion_service_frp_token = ""
+
+# FRP Proxy virtual host port
+bastion_service_frp_vhost_http_port = 8080
+
+# Traefik container's dynamic file configuration
 # Reference: https://docs.traefik.io/reference/dynamic-configuration/file/
-bastion_traefik_container_file_cfg = {
+bastion_traefik_container_file_cfg_dynamic = {
   http = {
-    middlewares = {}
-    routers = {}
+    # Global http to https redirect
+    middlewares = {
+      https-redirect = {
+        redirectScheme = {
+          scheme = "https"
+        }
+      }
+    }
+    routers = {
+      # Global http to https redirect
+      redirect = {
+        entryPoints = [
+          "http",
+        ]
+        rule = "hostregexp(`{host:.+}`)"
+        middlewares = [
+          "https-redirect",
+        ]
+        service = "noop@internal"
+        priority = 1
+      }
+    }
     services = {}
   }
 }
