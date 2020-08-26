@@ -167,15 +167,8 @@ k8s_vm_worker_proxmox_datastore_id = "local-lvm"
 k8s_metallb_ip_range = "192.168.1.100-192.168.1.200"
 
 # Storage
-# NFS Server
-# Enables NFS Server as default Storage Class provisioner
-k8s_nfs_default_storage_class = false
-
 # NFS server IP/Name
 k8s_nfs_server_address = "192.168.1.1"
-
-# List of Gluster cluster endpoints
-k8s_gluster_cluster_endpoints = ["192.168.1.1", "192.168.1.2"]
 
 #############################################################
 # Bastion Host variables
@@ -202,7 +195,7 @@ bastion_size = "s-1vcpu-1gb"
 # Digital Ocean OS image name
 bastion_image = "ubuntu-19-10-x64"
 
-# Traefik container's file configuration
+# Traefik static configuration
 # Reference: https://docs.traefik.io/reference/dynamic-configuration/file/
 bastion_traefik_container_file_cfg = {
   http = {

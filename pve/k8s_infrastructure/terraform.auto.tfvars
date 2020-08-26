@@ -34,15 +34,8 @@ cloudflare_zone_name = "example.com"
 #############################################################
 # Storage variables
 #############################################################
-# NFS Server
-# Enables NFS Server as default Storage Class provisioner
-nfs_default_storage_class = false
-
 # NFS server IP/Name
 nfs_server_address = "192.168.1.1"
-
-# List of Gluster cluster endpoints
-gluster_cluster_endpoints = ["192.168.1.1", "192.168.1.2"]
 
 #############################################################
 # Authentication variables
@@ -64,3 +57,23 @@ bitwarden_enabled = true
 
 # Enable PiHole
 pihole_enabled = true
+
+
+
+# Ceph admin secret. To get the key: > ceph auth get-key client.admin
+ceph_admin_secret = ""
+
+# Ceph user secret. To get user account key: > ceph --cluster ceph auth get-key client.kube
+ceph_user_secret = ""
+
+# Comma separated list of Ceph Monitors (e.g. 192.168.88.1:6789)"
+ceph_monitors = ""
+
+# Existing Ceph pool name that will be used by StorageClass
+ceph_pool_name = ""
+
+# Ceph Admin ID
+ceph_admin_id = "admin"
+
+# Ceph User ID
+ceph_user_id = "kube"

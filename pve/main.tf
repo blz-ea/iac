@@ -129,9 +129,7 @@ module "proxmox_k8s_infrastructure" {
 	cloudflare_api_token 		 = var.cloudflare_api_token
 	cloudflare_account_email 	 = var.cloudflare_account_email
 	cloudflare_zone_name		 = var.domain_name
-	nfs_default_storage_class	 = var.k8s_nfs_default_storage_class
 	nfs_server_address 			 = var.k8s_nfs_server_address
-	gluster_cluster_endpoints	 = var.k8s_gluster_cluster_endpoints
 
 	k8s_config_file_path 		 = module.proxmox_k8s_cluster.k8s_config_file_path
 	k8s_dashboard_token			 = var.k8s_dashboard_token
@@ -142,5 +140,13 @@ module "proxmox_k8s_infrastructure" {
 	default_time_zone			 = var.default_time_zone
 	dns_servers					 = var.dns_servers
 
+	ceph_admin_secret			 = var.ceph_admin_secret
+	ceph_user_secret			 = var.ceph_user_secret
+	ceph_monitors				 = var.ceph_monitors
+	ceph_pool_name				 = var.ceph_pool_name
+	ceph_admin_id				 = var.ceph_admin_id
+	ceph_user_id				 = var.ceph_user_id
+
 	source = "./k8s_infrastructure"
 }
+

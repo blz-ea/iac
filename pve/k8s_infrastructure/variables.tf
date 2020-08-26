@@ -64,23 +64,10 @@ variable "cloudflare_zone_name" {
 # Storage variables
 #############################################################
 # NFS Server
-variable "nfs_default_storage_class" {
-  type = bool
-  description = "Enables NFS Server as default Storage Class provisioner"
-  default = false
-}
-
 variable "nfs_server_address" {
   type = string
   description = "NFS server IP/Name"
   default = ""
-}
-
-# Gluster Server
-variable "gluster_cluster_endpoints" {
-  type = list(string)
-  default = []
-  description = "List of Gluster cluster endpoints"
 }
 
 #############################################################
@@ -119,4 +106,40 @@ variable "pihole_enabled" {
   type = bool
   description = "Enable PiHole"
   default = true
+}
+variable "ceph_admin_secret" {
+  type = string
+  description = "Ceph admin secret. To get the key: > ceph auth get-key client.admin"
+  default = ""
+}
+
+variable "ceph_user_secret" {
+  type = string
+  # To create a user account: > ceph --cluster ceph auth get-or-create client.kube mon 'allow r' osd 'allow rwx pool=<pool_name>>'
+  description = "Ceph user secret. To get user account key: > ceph --cluster ceph auth get-key client.kube"
+  default = ""
+}
+
+variable "ceph_monitors" {
+  type = string
+  description = "Comma separated list of Ceph Monitors (e.g. 192.168.88.1:6789)"
+  default = ""
+}
+
+variable "ceph_pool_name" {
+  type = string
+  description = "Ceph pool name that will be used by StorageClass"
+  default = ""
+}
+
+variable "ceph_admin_id" {
+  type = string
+  description = "Ceph Admin ID"
+  default = "admin"
+}
+
+variable "ceph_user_id" {
+  type = string
+  description = "Ceph User ID"
+  default = "kube"
 }
