@@ -23,41 +23,127 @@ resource "digitalocean_droplet" "bastion" {
   ]
 
   depends_on = [
-    digitalocean_ssh_key.default
+    digitalocean_ssh_key.default,
   ]
 }
 
-# Provision Droplet
+# Run initialize provisioner
 resource "null_resource" "bastion_initialize" {
-    # TODO: Add Triggers and separate into two separate provisioners
-	provisioner "local-exec" {
-		command = "ansible-playbook -i '${digitalocean_droplet.bastion.ipv4_address},' ${path.module}/bastion/bastion_provision.yml -e 'ansible_user=root'"
-		environment = {
-			ANSIBLE_CONFIG = "../ansible.cfg",
-			ANSIBLE_FORCE_COLOR = "True",
-			TERRAFORM_CONFIG = yamlencode({
-              user_name = var.user_name,
-              user_password = var.user_password,
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${digitalocean_droplet.bastion.ipv4_address},' ${path.module}/bastion_initialize.yml -e 'ansible_user=root'"
+    environment = {
+      ANSIBLE_CONFIG = "../ansible.cfg",
+      ANSIBLE_FORCE_COLOR = "True",
+      TERRAFORM_CONFIG = yamlencode({
+        user_name = var.user_name,
+        user_password = var.user_password,
 
-              bastion_ssh_port = var.bastion_ssh_port
-              # List of authorized keys
-              bastion_user_authorized_keys = [
-                {
-                  path = var.bastion_ssh_public_key_location,
-                  state = "present",
-                },
-              ],
-              # Bastion host firewall rules
-              ufw_rules = [
-                { rule = "allow", port = "80", proto = "tcp" },
-                { rule = "allow", port = "443", proto = "tcp" },
-              ],
-			}),
-		}
-	}
+        bastion_ssh_port = var.bastion_ssh_port
+        # List of authorized keys for deploy user
+        bastion_user_authorized_keys = [
+          {
+            path = var.bastion_ssh_public_key_location,
+            state = "present",
+          },
+        ],
+      }),
+    }
+  }
 
   depends_on = [
-    digitalocean_droplet.bastion
+    digitalocean_droplet.bastion,
+  ]
+
+}
+
+# Provision droplet
+resource "null_resource" "bastion_provision" {
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${digitalocean_droplet.bastion.ipv4_address},' ${path.module}/bastion_provision.yml -e 'ansible_user=${var.user_name}'  -e 'ansible_port=${var.bastion_ssh_port}'"
+    environment = {
+      ANSIBLE_CONFIG = "../ansible.cfg",
+      ANSIBLE_FORCE_COLOR = "True",
+      TERRAFORM_CONFIG = yamlencode({
+        user_name = var.user_name,
+      }),
+    }
+  }
+
+  depends_on = [
+    null_resource.bastion_initialize,
+  ]
+
+}
+
+locals {
+  bastion_ufw_rules = [
+    { rule = "allow", port = "80", proto = "tcp" },
+    { rule = "allow", port = "443", proto = "tcp" },
+    { rule = "allow", port = "8080", proto = "tcp", interface = "docker0", direction = "in" }, # Frp proxy
+    { rule = "allow", port = "43500", proto = "tcp" }, # Frp proxy
+    { rule = "allow", port = "60000:61000", proto = "udp" }, # Mosh
+  ]
+}
+
+# Provision droplet - fw
+resource "null_resource" "bastion_provision_fw" {
+  triggers = {
+    ufw_rules = sha1(yamlencode(local.bastion_ufw_rules))
+  }
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${digitalocean_droplet.bastion.ipv4_address},' ${path.module}/bastion_fw.yml -e 'ansible_user=${var.user_name}'  -e 'ansible_port=${var.bastion_ssh_port}'"
+    environment = {
+      ANSIBLE_CONFIG = "../ansible.cfg",
+      ANSIBLE_FORCE_COLOR = "True",
+      TERRAFORM_CONFIG = yamlencode({
+        # Bastion host firewall rules
+        ufw_rules = local.bastion_ufw_rules
+      }),
+    }
+  }
+
+  depends_on = [
+    null_resource.bastion_initialize,
+  ]
+
+}
+
+#############################################################
+# Frp proxy service
+#############################################################
+resource "null_resource" "bastion_frp_proxy" {
+  triggers = {
+    ipv4_address  = digitalocean_droplet.bastion.ipv4_address
+    username      = var.user_name
+    ssh_port      = var.bastion_ssh_port
+    frp_bind_port = var.bastion_service_frp_bind_port
+    frp_token     = var.bastion_service_frp_token
+    frp_vhost_http_port = var.bastion_service_frp_vhost_http_port
+  }
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${self.triggers.ipv4_address},' ../modules/ansible-roles/main.yml -e 'ansible_user=${self.triggers.username}' -e 'ansible_port=${self.triggers.ssh_port}'  -e 'state=present' --tags frp"
+    environment = {
+      ANSIBLE_CONFIG = "../ansible.cfg",
+      ANSIBLE_FORCE_COLOR = "True",
+
+      FRP_BIND_PORT = var.bastion_service_frp_bind_port
+      FRP_TOKEN = var.bastion_service_frp_token
+      FRP_VHOST_HTTP_PORT = var.bastion_service_frp_vhost_http_port
+    }
+  }
+
+  provisioner "local-exec" {
+    when = destroy
+    command = "ansible-playbook -i '${self.triggers.ipv4_address},' ../modules/ansible-roles/main.yml -e 'ansible_user=${self.triggers.username}' -e 'ansible_port=${self.triggers.ssh_port}' -e 'state=absent' --tags frp"
+    environment = {
+      ANSIBLE_CONFIG = "../ansible.cfg",
+      ANSIBLE_FORCE_COLOR = "True",
+    }
+  }
+
+  depends_on = [
+    null_resource.bastion_provision,
   ]
 
 }
@@ -140,23 +226,6 @@ module "bastion_traefik" {
     "443:443",
   ]
 
-  command = [
-    "--entryPoints.http.address=:80",
-    "--entryPoints.https.address=:443",
-
-    "--providers.docker=true",
-    "--providers.docker.exposedbydefault=false",
-
-    "--providers.file=true",
-    "--providers.file.directory=/etc/conf.d/",
-
-    "--certificatesResolvers.cloudflare.acme.email=${var.cloudflare_account_email}",
-    "--certificatesResolvers.cloudflare.acme.storage=/letsencrypt/acme.json",
-    "--certificatesResolvers.cloudflare.acme.dnsChallenge.provider=cloudflare",
-    "--certificatesResolvers.cloudflare.acme.dnsChallenge.delayBeforeCheck=30",
-    "--certificatesResolvers.cloudflare.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53",
-  ]
-
   labels = [
     # Default Auth
     # TODO: Add Authlia
@@ -169,7 +238,8 @@ module "bastion_traefik" {
     "traefik.http.routers.traefik.middlewares=default-basic-auth",
   ]
 
-  file_cfg = var.bastion_traefik_container_file_cfg
+  file_cfg_dynamic = var.bastion_traefik_container_file_cfg_dynamic
+  file_cfg_static = var.bastion_traefik_container_file_cfg_static
 
   env = [
     "CLOUDFLARE_EMAIL=${var.cloudflare_account_email}",

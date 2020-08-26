@@ -13,37 +13,7 @@
         name: pre_tasks
       tags:
         - always
-  tasks:    
-    - name: Pre-flight check
-      include_role:
-        name: pre_flight_check
-      tags:
-        - preflight
-        - check
-    
-    - name: Add user
-      include_role:
-        name: user
-      vars:
-        username: "{{ terraform_config.user_name }}"
-        password: "{{ terraform_config.user_password }}"
-        passwordless_sudo: yes
-        user_groups: "sudo"
-        authorized_keys: "{{ terraform_config.bastion_user_authorized_keys }}"
-      tags:
-        - user
-
-    - name: Install and Configurate SSH
-      vars:
-        access_port: "{{ bastion_ssh_port }}"
-        root_acc_access: no
-        password_auth: no
-        set_ssh_ansible_user: "{{ default_user.name }}"
-      include_role:
-        name: ssh
-      tags:
-        - ssh
-    
+  tasks:
     - name: Intall Tmux
       include_role:
         name: tmux
@@ -64,27 +34,18 @@
       tags:
         - golang
 
-    - name: Install and Configurate UFW
-      include_role:
-        name: ufw
-      vars:
-        state: enabled
-        rules: "{{ terraform_config.ufw_rules }}"
-      tags:
-        - ufw
-
     - name: Install Terraform
       include_role:
         name: terraform
       tags:
         - terraform
-    
+
     - name: Install Mosh
       include_role:
         name: mosh
       tags:
         - mosh
-    
+
     - name: Install Python3
       include_role:
         name: python3
