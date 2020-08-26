@@ -1,0 +1,165 @@
+- setup:
+    gather_subset: "all"
+
+- set_fact:
+    arch: amd64
+  when: ansible_architecture == 'x86_64'
+  tags:
+    - always
+
+- set_fact:
+    arch: 386
+  when: ansible_architecture == 'i386'
+  tags:
+    - always
+
+- set_fact:
+    os: linux
+  tags:
+    - always
+
+- set_fact:
+    os: darwin
+  when: ansible_os_family == "Darwin"
+  tags:
+    - always
+
+- name: Frp installation
+  become: yes
+  block:
+    - name: Install unzip
+      package:
+        name: unzip
+        state: present
+      tags:
+        - always
+
+    - name: "Get latest release information `{{ git_repo_api }}/releases/latest`"
+      uri:
+        url: "{{ git_repo_api }}/releases/latest"
+        method: GET
+        body_format: json
+        status_code: 200
+        return_content: true
+      register: frp_json_response
+
+    - name: Delete existing release
+      file: path={{ installation_path }} state=absent
+
+    - name: "Create directory `{{ installation_path }}`"
+      file:
+        path: "{{ installation_path }}"
+        state: directory
+        mode: 0755
+
+    - name: "Delete existing temp directory `{{ temp_directory }}`"
+      file:
+        path: "{{ temp_directory }}"
+        state: absent
+
+    - name: "Create temp directory `{{ temp_directory }}`"
+      file:
+        path: "{{ temp_directory }}"
+        state: directory
+        mode: 0755
+
+    - name: Extract latest release to `{{ temp_directory }}`
+      unarchive:
+        src: "{{ git_repo }}/releases/download/{{ frp_json_response.json.tag_name }}/frp_{{ frp_json_response.json.tag_name[1:] }}_{{ os }}_{{ arch }}.tar.gz"
+        dest: "{{ temp_directory }}"
+        remote_src: yes
+        mode: 0755
+
+    - name: "Move files from `{{ temp_directory }}` directory to `{{ installation_path }}`"
+      copy:
+        remote_src: True
+        src: "{{ temp_directory }}/frp_{{ frp_json_response.json.tag_name[1:] }}_{{ os }}_{{ arch }}/"
+        dest: "{{ installation_path }}"
+
+    - name: "Delete temp directory `{{ temp_directory }}`"
+      file:
+        path: "{{ temp_directory }}"
+        state: absent
+
+    - name: Create link to `/usr/bin/frps`
+      file:
+        src: "{{ installation_path }}/frps"
+        dest: /usr/bin/frps
+        state: link
+        mode: 755
+
+    - name: Create link to `/etc/systemd/system/frps.service`
+      file:
+        src: "{{ installation_path }}/systemd/frps.service"
+        dest: /etc/systemd/system/frps.service
+        state: link
+
+    - name: "Delete existing configuration file `/etc/frp/frps.ini`"
+      file:
+        path: /etc/frp/frps.ini
+        state: absent
+
+    - name: Create config directory `/etc/frp`
+      file:
+        path: /etc/frp
+        state: directory
+        mode: 0755
+
+    - name: "Copy configuration to `/etc/frp/frps.ini`"
+      copy:
+        content: |
+                  [common]
+                  bind_port = {{ lookup('env','FRP_BIND_PORT') }}
+                  authenticate_new_work_conns = true
+                  authentication_method = token
+                  token = {{ lookup('env','FRP_TOKEN') }}
+                  tls_enable = true
+                  tls_only = true
+                  vhost_http_port = {{ lookup('env','FRP_VHOST_HTTP_PORT') }}
+
+        dest: /etc/frp/frps.ini
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Make sure service `frps` is enabled
+      systemd:
+        name: frps
+        enabled: yes
+
+    - name: Restart `frps` service
+      systemd:
+        name: frps
+        state: restarted
+
+  when: state == 'present'
+  tags:
+    - install
+    - frp
+
+- name: Frp uninstall
+  become: yes
+  block:
+    - name: Stop `frps` service
+      systemd:
+        name: frps
+        state: stopped
+
+    - name: "Delete files and folders"
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ installation_path }}"
+        - /etc/frp/frps.ini
+        - /etc/systemd/system/frps.service
+        - /usr/bin/frps
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+  when: state == 'absent'
+  tags:
+    - remove
+    - frp

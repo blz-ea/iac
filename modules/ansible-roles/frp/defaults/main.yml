@@ -1,0 +1,6 @@
+---
+git_repo_api: https://api.github.com/repos/fatedier/frp
+git_repo: https://github.com/fatedier/frp
+installation_path: /opt/frp
+state: present
+temp_directory: /tmp/frp_installation
