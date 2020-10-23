@@ -1,7 +1,3 @@
-terraform {
-  required_version = ">= 0.12"
-}
-
 locals {
 	proxmox_nodes = {
 		node1 = {
@@ -9,26 +5,6 @@ locals {
 			data_stores = data.proxmox_virtual_environment_datastores.node_1
 		}
 	}
-}
-
-provider "proxmox" {
-  virtual_environment {
-    endpoint = var.proxmox_api_url
-    username = var.proxmox_api_username
-    password = var.proxmox_api_password
-    insecure = var.proxmox_api_tls_insecure
-  }
-}
-
-#############################################################
-# Providers
-#############################################################
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
-}
-
-provider "digitalocean" {
-  token = var.digital_ocean_api_key
 }
 
 #############################################################
@@ -132,7 +108,6 @@ module "proxmox_k8s_infrastructure" {
 	nfs_server_address 			 = var.k8s_nfs_server_address
 
 	k8s_config_file_path 		 = module.proxmox_k8s_cluster.k8s_config_file_path
-	k8s_dashboard_token			 = var.k8s_dashboard_token
 
 	github_oauth_client_id		 = var.github_oauth_client_id
 	github_oauth_client_secret   = var.github_oauth_client_secret
