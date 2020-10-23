@@ -4,19 +4,20 @@
 variable "proxmox_api_url" {
   description = "Proxmox api url"
   type        = string
-  default     = "https://192.168.1.1:8006"
+  validation {
+    condition     = can(regex("^http", var.proxmox_api_url))
+    error_message = "Must be an URL, e.g. https://192.168.1.1:8006."
+  }
 }
 
 variable "proxmox_api_username" {
   description = "Proxmox api username"
   type        = string
-  default     = "root@pam"
 }
 
 variable "proxmox_api_password" {
   description = "Proxmox api password"
   type        = string
-  default     = "password"
 }
 
 variable "proxmox_api_otp" {

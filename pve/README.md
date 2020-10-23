@@ -1,4 +1,4 @@
-# [Proxmox](https://www.proxmox.com/) Virtual Environment #
+# [Proxmox Virtual Environment](https://www.proxmox.com/) #
 
 ## Requirements ##
 

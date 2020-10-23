@@ -4,18 +4,16 @@
 <img src="./.github/header.png">
 </div>
 
-A boilerplate to create a full Infrastructure as Code for various cloud environments, from provisioning to deployment with:
-
-- **Terraform**
-- **Ansible**
-- **Packer**
+A boilerplate to create a full Infrastructure as Code for various cloud environments, from provisioning to deployment
 
 ## Requirements ##
 
-- **nix OS or WSL**
-- **Terraform > 0.12.24**
-- **Ansible > 2.9.6**
-- **Packer > 1.6.0**
+| Name          | Version |
+|---------------|---------|
+| nix OS or WSL |  |
+| terraform     | \>= 0.13 |
+| packer        | = 1.6.0 |
+| ansible       | \>= 2.9.6 |
 
 ## Folder Structure ##
 
@@ -48,7 +46,7 @@ or manually install
 - [Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html)
 - [Packer](https://learn.hashicorp.com/packer/getting-started/install)
 
-### Example environments ###
+### Environments ###
 
 - [Proxmox Virtual Environment](./pve/)
 - Amazon Web Services
@@ -77,3 +75,4 @@ generateResolvConf = true
 
 - Add tests
 - Add support for Hashicorp Vault
+- Refactor

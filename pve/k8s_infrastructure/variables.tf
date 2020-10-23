@@ -85,14 +85,6 @@ variable "github_oauth_client_secret" {
   default = ""
 }
 
-variable "k8s_dashboard_token" {
-  # Can be found in K8s secrets (`kubernetes-dashboard-token-<unique_id>`) in `kube-system` namespace
-  # Provide decoded token
-  type = string
-  description = "K8s dashboard token"
-  default = ""
-}
-
 #############################################################
 # Services
 #############################################################
