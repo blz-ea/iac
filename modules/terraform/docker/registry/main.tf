@@ -11,7 +11,7 @@ locals {
 # Passed in dependencies
 resource "null_resource" "depends_on" {
   triggers = {
-    depends_on = "${join("", var.dependencies)}"
+    depends_on = join("", var.dependencies)
   }
 }
 
@@ -43,8 +43,9 @@ resource "docker_container" "container" {
   dynamic "ports" {
     for_each = var.ports
     content {
-      internal = element(split(":", ports.value), 0)
-      external = element(split(":", ports.value), 1)
+      internal  = ports.value.internal
+      external  = ports.value.external
+      ip        = ports.value.ip
     }
   }
 

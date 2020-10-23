@@ -5,24 +5,24 @@
     arch: amd64
   when: ansible_architecture == 'x86_64'
   tags:
-    - always
+    - frp
 
 - set_fact:
     arch: 386
   when: ansible_architecture == 'i386'
   tags:
-    - always
+    - frp
 
 - set_fact:
     os: linux
   tags:
-    - always
+    - frp
 
 - set_fact:
     os: darwin
   when: ansible_os_family == "Darwin"
   tags:
-    - always
+    - frp
 
 - name: Frp installation
   become: yes
@@ -31,8 +31,6 @@
       package:
         name: unzip
         state: present
-      tags:
-        - always
 
     - name: "Get latest release information `{{ git_repo_api }}/releases/latest`"
       uri:

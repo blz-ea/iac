@@ -19,7 +19,7 @@ variable "command" {
 }
 
 variable "ports" {
-  type = list(string)
+  type = list(map(string))
   default = []
 }
 

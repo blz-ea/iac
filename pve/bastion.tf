@@ -195,7 +195,11 @@ module "bastion_registry" {
 
   env = []
   ports = [
-    "5000:5000"
+    {
+      internal: 5000,
+      external: 5000,
+      ip: "127.0.0.1",
+    }
   ]
 
   labels = [

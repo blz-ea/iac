@@ -1,17 +1,3 @@
-provider "random" {
-  version = "2.3.0"
-}
-
-provider "kubernetes" {
-  config_path = var.k8s_config_file_path
-}
-
-provider "helm" {
-  kubernetes {
-    config_path = var.k8s_config_file_path
-  }
-}
-
 locals {
   helm_charts_path        = pathexpand("${path.module}/../../modules/helm")
   dashed_domain_name      = replace(var.domain_name, ".", "-")
@@ -141,7 +127,7 @@ resource "kubernetes_secret" "cloudflare_key_secret" {
 
 }
 
-// Cluster issuer resource
+# Cluster issuer resource
 resource "helm_release" "cert_manager_cluster_issuer" {
   count = length(var.cloudflare_account_email) > 0 ? 1 : 0
 

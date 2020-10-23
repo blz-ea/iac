@@ -44,7 +44,7 @@ resource "null_resource" "packer_centos_7" {
 
   triggers = {
     default_config  = yamlencode(local.packer_default_cfg)
-    config 			= yamlencode(local.packer_centos_7)
+    config          = yamlencode(local.packer_centos_7)
     sources_hash    = sha1(file("${path.module}/templates/centos-7/sources.pkr.hcl"))
     http_seed_hash  = sha1(file("${path.module}/templates/centos-7/http/preseed.cfg"))
   }
@@ -69,7 +69,7 @@ resource "null_resource" "packer_ubuntu_bionic" {
 
   triggers = {
     default_config  = yamlencode(local.packer_default_cfg)
-    config 			= yamlencode(local.packer_ubuntu_bionic)
+    config          = yamlencode(local.packer_ubuntu_bionic)
     sources_hash    = sha1(file("${path.module}/templates/ubuntu-18.04/sources.pkr.hcl"))
     http_seed_hash  = sha1(file("${path.module}/templates/ubuntu-18.04/http/preseed.cfg"))
   }

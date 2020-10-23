@@ -535,11 +535,6 @@ resource "proxmox_virtual_environment_vm" "worker" {
     enabled = true
   }
 
-//  disk {
-//    datastore_id = "local-lvm"
-//    size = 30 # Should be the same as copy
-//  }
-
   memory {
     dedicated = var.vm_worker_ram_dedicated
     floating  = var.vm_worker_ram_floating
