@@ -1,25 +1,15 @@
 # [Proxmox](https://www.proxmox.com/) Virtual Environment #
 
-<div align="center">
-<img src="../.github/header_pve.png">
-</div>
-
-```pseudo
-Kernel Version: 5.4.27-1-pve
-PVE Manager Version: 6.2-6
-```
-
 ## Requirements ##
 
-- **Terraform**
-- **Packer**
-- **Golang > 1.14**
-- **[Terraform Proxmox Plugin](https://github.com/Telmate/terraform-provider-proxmox/blob/master/docs/installation.md)**
-- **Ansible**
-- **Access to Proxmox API**
-- **Access to Proxmox via SSH**
-- **kubectl**
-- **Helm**
+| Name          | Version |
+|---------------|---------|
+| proxmox       | \>= 6.2 |
+| terraform     | \>= 0.13 |
+| packer        | = 1.6.0 |
+| ansible       | \>= 2.9.6 |
+| helm          | \>= 3.2.4 |
+| kubectl       | same as K8s cluster |
 
 ## Folder Structure ##
 - [`main`](./main.tf) - Main entry point
@@ -35,7 +25,7 @@ PVE Manager Version: 6.2-6
 
 ## Current setup ##
 
-![map](./diagram/diagram.png)
+![map](./diagram/diagram.svg)
 
 ## Quick start ##
 
@@ -49,9 +39,7 @@ or manually install
 
 - [Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html)
 - [Packer](https://learn.hashicorp.com/packer/getting-started/install)
-- [Golang](https://golang.org/dl/)
 - [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
-- [Terraform Proxmox Plugin](https://github.com/danitso/terraform-provider-proxmox/releases)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 - [Helm](https://helm.sh/docs/intro/install/)
 
