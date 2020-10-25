@@ -31,7 +31,7 @@ A boilerplate to create a full Infrastructure as Code for various cloud environm
 ### Step 1: Clone repository ###
 
 ```bash
-git clone git@github.com:blz-ea/devops.git
+git clone git@github.com:blz-ea/iac.git
 ```
 
 ### Step 2: Install requirements ###
