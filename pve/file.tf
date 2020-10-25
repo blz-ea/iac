@@ -37,18 +37,6 @@ resource "proxmox_virtual_environment_file" "centos-7-x86-64-minimal-1908" {
 
 }
 
-resource "proxmox_virtual_environment_file" "ubuntu-18-04-4-server-amd64" {
-  content_type = "iso"
-
-  datastore_id = var.default_data_store_id
-  node_name    = local.proxmox_nodes.node1.name
-
-  source_file {
-    path = "http://cdimage.ubuntu.com/releases/bionic/release/ubuntu-18.04.4-server-amd64.iso"
-  }
-
-}
-
 resource "proxmox_virtual_environment_file" "ubuntu-18-04-5-server-amd64" {
   content_type = "iso"
 

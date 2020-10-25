@@ -91,7 +91,7 @@ module "proxmox_k8s_cluster" {
   vm_worker_proxmox_datastore_id = var.k8s_vm_worker_proxmox_datastore_id
 
   dependencies = [
-    null_resource.packer_ubuntu_bionic.id
+    module.packer-ubuntu-18-04-5-amd64.vm_id
   ]
   source = "./k8s_cluster"
 }
