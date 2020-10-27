@@ -603,7 +603,7 @@ resource "kubernetes_stateful_set" "deemix" {
 
 #############################################################
 # Plex Media Server
-# Ref: https://hub.helm.sh/charts/billimek/plex
+# Ref: https://github.com/plexinc/pms-docker
 #############################################################
 resource "kubernetes_ingress" "plex_ingress" {
   count = 1
@@ -715,7 +715,7 @@ resource "kubernetes_stateful_set" "plex" {
 
           env {
             name = "ADVERTISE_IP"
-            value = "https://plex.devset.app:443"
+            value = "https://plex.${var.domain_name}:443"
           }
 
 
