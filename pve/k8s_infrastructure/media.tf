@@ -1,5 +1,5 @@
 locals {
-  media_namespace             = kubernetes_namespace.media.metadata.0.name
+  media_namespace = kubernetes_namespace.media.metadata.0.name
 }
 
 resource "kubernetes_namespace" "media" {
@@ -11,6 +11,55 @@ resource "kubernetes_namespace" "media" {
       "app.kubernetes.io/component" = "htpc"
     }
   }
+}
+
+#############################################################
+# Cert-manager - Certificate
+# Note: Wildcard certificate issued for media namespace
+# Ref: https://cert-manager.io/docs/concepts/certificate/
+#############################################################
+resource "helm_release" "cert_manager_wildcard_certificate_media" {
+  count = length(var.cloudflare_account_email) > 0 ? 1 : 0
+  namespace = local.media_namespace
+
+  chart = "${local.helm_charts_path}/cert-manager-resources/certificate"
+  name  = "cert-manager-wildcard-certificate-${local.media_namespace}"
+
+  set {
+    name = "name"
+    value = "letsencrypt-wildcard-${local.media_namespace}"
+  }
+
+  set {
+    name = "namespace"
+    value = local.media_namespace
+  }
+
+  set {
+    name = "secretName"
+    value = "letsencrypt-wildcard-secret-${local.media_namespace}"
+  }
+
+  set {
+    name = "dnsNames"
+    value = "{${join(",", [ "*.${var.cloudflare_zone_name}" ])}}"
+  }
+
+  set {
+    name = "issuerRef.name"
+    value = local.cert_manager_cluster_issuer_name
+  }
+
+  set {
+    name = "issuerRef.kind"
+    value = "ClusterIssuer"
+  }
+
+  depends_on = [
+    helm_release.cert_manager_cluster_issuer,
+    helm_release.cert_manager,
+  ]
+
 }
 
 #############################################################
@@ -31,9 +80,9 @@ resource "kubernetes_ingress" "radarr_ingress" {
   spec {
     tls {
       hosts = [
-        "radarr.${var.domain_name}",
+        "*.${var.domain_name}",
       ]
-      secret_name = "radarr--${local.dashed_domain_name}"
+      secret_name = "letsencrypt-wildcard-secret-${local.media_namespace}"
     }
 
     backend {
@@ -56,6 +105,10 @@ resource "kubernetes_ingress" "radarr_ingress" {
     }
 
   }
+
+  depends_on = [
+    helm_release.cert_manager_wildcard_certificate_media
+  ]
 }
 
 resource "kubernetes_service" "radarr_service" {
@@ -208,9 +261,9 @@ resource "kubernetes_ingress" "sonarr_ingress" {
   spec {
     tls {
       hosts = [
-        "sonarr.${var.domain_name}",
+        "*.${var.domain_name}",
       ]
-      secret_name = "sonarr-${local.dashed_domain_name}"
+      secret_name = "letsencrypt-wildcard-secret-${local.media_namespace}"
     }
 
     backend {
@@ -385,9 +438,9 @@ resource "kubernetes_ingress" "deemix_ingress" {
   spec {
     tls {
       hosts = [
-        "deemix.${var.domain_name}",
+        "*.${var.domain_name}",
       ]
-      secret_name = "deemix-${local.dashed_domain_name}"
+      secret_name = "letsencrypt-wildcard-secret-${local.media_namespace}"
     }
 
     backend {
@@ -492,7 +545,7 @@ resource "kubernetes_stateful_set" "deemix" {
           }
 
           port {
-            container_port = 7878
+            container_port = 6595
           }
 
           volume_mount {
@@ -549,6 +602,182 @@ resource "kubernetes_stateful_set" "deemix" {
 }
 
 #############################################################
+# Plex Media Server
+# Ref: https://hub.helm.sh/charts/billimek/plex
+#############################################################
+resource "kubernetes_ingress" "plex_ingress" {
+  count = 1
+
+  metadata {
+    name      = "plex-ingress"
+    namespace = local.media_namespace
+    annotations = {
+      "nginx.ingress.kubernetes.io/rewrites-target" = "/"
+      "nginx.ingress.kunernetes.io/ssl-redirect"    = "false"
+      "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
+    }
+  }
+  spec {
+    tls {
+      hosts = [
+        "*.${var.domain_name}",
+      ]
+      secret_name = "letsencrypt-wildcard-secret-${local.media_namespace}"
+    }
+
+    backend {
+      service_name = "plex-service"
+      service_port = 80
+    }
+
+    rule {
+      host = "plex.${var.domain_name}"
+      http {
+        path {
+          path = "/"
+          backend {
+            service_name = "plex-service"
+            service_port = 80
+          }
+        }
+
+      }
+    }
+
+  }
+
+}
+
+resource "kubernetes_service" "plex_service" {
+  count = 1
+
+  metadata {
+    namespace = local.media_namespace
+    name = "plex-service"
+  }
+
+  spec {
+    type = "ClusterIP"
+    selector = {
+      "app.kubernetes.io/name" = "plex"
+    }
+
+    port {
+      name        = "http"
+      port        = 80
+      target_port = 32400
+    }
+
+  }
+}
+
+// TODO: Add Post init script that will get the claim token and caim the server
+// TODO: Add plugins
+// TODO: Add video card device
+// TODO: Add transcoding operator
+resource "kubernetes_stateful_set" "plex" {
+  count = 1
+  metadata {
+    namespace = local.media_namespace
+    name      = "plex"
+    labels = {
+      "app.kubernetes.io/name"      = "plex"
+    }
+  }
+
+  spec {
+    service_name  = "plex"
+    replicas      = 1
+
+    selector {
+      match_labels = {
+        "app.kubernetes.io/name" = "plex"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          "app.kubernetes.io/name"      = "plex"
+          "app.kubernetes.io/part-of"   = "htpc"
+        }
+      }
+
+      spec {
+        container {
+          name  = "plex"
+          image = "plexinc/pms-docker"
+
+          env {
+            name  = "TZ"
+            value = var.default_time_zone
+          }
+
+          env {
+            name = "ADVERTISE_IP"
+            value = "https://plex.devset.app:443"
+          }
+
+
+          port {
+            name = "web"
+            container_port = 32400
+          }
+
+          volume_mount {
+            mount_path = "/config"
+            name = "plex-data-volume"
+          }
+
+          volume_mount {
+            mount_path  = "/data"
+            name        = "nfs-media"
+          }
+
+        }
+
+        volume {
+          name = "plex-data-volume"
+          persistent_volume_claim {
+            claim_name = "plex-data-volume"
+          }
+        }
+
+        volume {
+          name = "nfs-media"
+          nfs {
+            path    = "/mnt/local/media/"
+            server  = var.nfs_server_address
+          }
+        }
+
+      }
+    }
+
+    update_strategy {
+      type = "RollingUpdate"
+    }
+
+    volume_claim_template {
+      metadata {
+        name = "plex-data-volume"
+      }
+      spec {
+        access_modes = [
+          "ReadWriteOnce"
+        ]
+        resources {
+          requests = {
+            storage = "100Gi"
+          }
+        }
+      }
+    }
+
+  }
+}
+
+#############################################################
 # Qbittorrent
 # Ref: https://github.com/linuxserver/docker-qbittorrent
 #############################################################
@@ -561,17 +790,15 @@ resource "kubernetes_ingress" "qbittorrent_ingress" {
       "nginx.ingress.kubernetes.io/rewrites-target" = "/"
       "nginx.ingress.kunernetes.io/ssl-redirect"    = "false"
       "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
-      "nginx.ingress.kubernetes.io/auth-url"        = "https://forwardauth.${var.domain_name}/verify?uri=$scheme://$host$request_uri"
-      "nginx.ingress.kubernetes.io/auth-signin"     =  "https://forwardauth.${var.domain_name}?uri=$scheme://$host$request_uri"
     }
   }
 
   spec {
     tls {
       hosts = [
-        "qbittorrent.${var.domain_name}",
+        "*.${var.domain_name}",
       ]
-      secret_name = "qbittorrent-${local.dashed_domain_name}"
+      secret_name = "letsencrypt-wildcard-secret-${local.media_namespace}"
     }
 
     backend {
@@ -651,79 +878,79 @@ resource "kubernetes_stateful_set" "qbittorrent" {
         # Disable all possible connections
         # VPN container will open required ports and allow
         # required rules and implement full kill switch
-        init_container {
-          name  = "minimal-kill-switch"
-          image = "nicolaka/netshoot"
-          security_context {
-            privileged = true
-            capabilities {
-              add = [
-                "NET_ADMIN",
-                "SYS_MODULE",
-              ]
-            }
-          }
-          command = [
-            "sh",
-            "-c",
-            "iptables -F && iptables -X && iptables -P INPUT DROP && iptables -P FORWARD DROP && iptables -P OUTPUT DROP && exit 0",
-          ]
-        }
+//        init_container {
+//          name  = "minimal-kill-switch"
+//          image = "nicolaka/netshoot"
+//          security_context {
+//            privileged = true
+//            capabilities {
+//              add = [
+//                "NET_ADMIN",
+//                "SYS_MODULE",
+//              ]
+//            }
+//          }
+//          command = [
+//            "sh",
+//            "-c",
+//            "iptables -F && iptables -X && iptables -P INPUT DROP && iptables -P FORWARD DROP && iptables -P OUTPUT DROP && exit 0",
+//          ]
+//        }
 
         # VPN Container
         # All traffic from torrent client will be routed through this container
-        container {
-          security_context {
-            privileged = true
-            capabilities {
-              add = [
-                "NET_ADMIN",
-                "SYS_MODULE",
-              ]
-            }
-          }
-
-          name  = "nordvpn"
-          image = "bubuntux/nordvpn"
-
-          env {
-            name  = "USER"
-            value = var.nordvpn_username
-          }
-
-          env {
-            name  = "PASS"
-            value = var.nordvpn_password
-          }
-
-          env {
-            name  = "TECHNOLOGY"
-            value = "NordLynx"
-          }
-
-          env {
-            name  = "CONNECT"
-            value = length(var.nordvpn_server) > 0 ? var.nordvpn_server : ""
-          }
-
-          env {
-            name  = "PORTS"
-            value = "8080"
-          }
-
-          env {
-            name = "NETWORK"
-            # Allow access from all private networks
-            value = "10.0.0.0/8,172.16.0.0/12,192.0.0.0/24,192.168.0.0/16,198.18.0.0/15"
-          }
-
-          volume_mount {
-            mount_path = "/dev/net/tun"
-            name      = "dev-net-tun"
-            read_only = true
-          }
-
-        }
+//        container {
+//          security_context {
+//            privileged = true
+//            capabilities {
+//              add = [
+//                "NET_ADMIN",
+//                "SYS_MODULE",
+//              ]
+//            }
+//          }
+//
+//          name  = "nordvpn"
+//          image = "bubuntux/nordvpn"
+//
+//          env {
+//            name  = "USER"
+//            value = var.nordvpn_username
+//          }
+//
+//          env {
+//            name  = "PASS"
+//            value = var.nordvpn_password
+//          }
+//
+//          env {
+//            name  = "TECHNOLOGY"
+//            value = "NordLynx"
+//          }
+//
+//          env {
+//            name  = "CONNECT"
+//            value = length(var.nordvpn_server) > 0 ? var.nordvpn_server : ""
+//          }
+//
+//          env {
+//            name  = "PORTS"
+//            value = "8080"
+//          }
+//
+//          env {
+//            name = "NETWORK"
+//            # Allow access from all private networks
+//            value = "10.0.0.0/8,172.16.0.0/12,192.0.0.0/24,192.168.0.0/16,198.18.0.0/15"
+//          }
+//
+//          volume_mount {
+//            mount_path = "/dev/net/tun"
+//            name      = "dev-net-tun"
+//            read_only = true
+//          }
+//
+//        }
 
         container {
           name  = "qbittorrent"
@@ -791,12 +1018,12 @@ resource "kubernetes_stateful_set" "qbittorrent" {
           }
         }
 
-        volume {
-          name = "dev-net-tun"
-          host_path {
-            path = "/dev/net/tun"
-          }
-        }
+//        volume {
+//          name = "dev-net-tun"
+//          host_path {
+//            path = "/dev/net/tun"
+//          }
+//        }
 
         volume {
           name = "nfs-media"

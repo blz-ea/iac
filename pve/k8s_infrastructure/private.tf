@@ -12,6 +12,55 @@ resource "kubernetes_namespace" "private" {
 }
 
 #############################################################
+# Cert-manager - Certificate
+# Note: Wildcard certificate issued for private namespace
+# Ref: https://cert-manager.io/docs/concepts/certificate/
+#############################################################
+resource "helm_release" "cert_manager_wildcard_certificate_private" {
+  count = length(var.cloudflare_account_email) > 0 ? 1 : 0
+  namespace = local.private_namespace
+
+  chart = "${local.helm_charts_path}/cert-manager-resources/certificate"
+  name  = "cert-manager-wildcard-certificate-${local.private_namespace}"
+
+  set {
+    name = "name"
+    value = "letsencrypt-wildcard-${local.private_namespace}"
+  }
+
+  set {
+    name = "namespace"
+    value = local.private_namespace
+  }
+
+  set {
+    name = "secretName"
+    value = "letsencrypt-wildcard-secret-${local.private_namespace}"
+  }
+
+  set {
+    name = "dnsNames"
+    value = "{${join(",", [ "*.${var.cloudflare_zone_name}" ])}}"
+  }
+
+  set {
+    name = "issuerRef.name"
+    value = local.cert_manager_cluster_issuer_name
+  }
+
+  set {
+    name = "issuerRef.kind"
+    value = "ClusterIssuer"
+  }
+
+  depends_on = [
+    helm_release.cert_manager_cluster_issuer,
+    helm_release.cert_manager,
+  ]
+
+}
+
+#############################################################
 # Bitwarden RS
 # Ref: https://github.com/dani-garcia/bitwarden_rs
 #############################################################
@@ -30,9 +79,9 @@ resource "kubernetes_ingress" "bitwarden_rs_ingress" {
   spec {
     tls {
       hosts = [
-        "bitwarden.${var.domain_name}",
+        "*.${var.domain_name}",
       ]
-      secret_name = "bitwarden-${local.dashed_domain_name}"
+      secret_name = "letsencrypt-wildcard-secret-${local.private_namespace}"
     }
 
     backend {
@@ -194,101 +243,3 @@ resource "kubernetes_stateful_set" "bitwarden_rs" {
 
   }
 }
-
-#############################################################
-# Vault
-# Ref: https://github.com/hashicorp/vault-helm
-#############################################################
-//locals {
-//  vault_helm_values = {
-//    server = {
-//      standalone = {
-//        enabled = true
-//        config = <<EOF
-//ui = true
-//
-//listener "tcp" {
-//  tls_disable = 1
-//  address = "[::]:8200"
-//  cluster_address = "[::]:8201"
-//}
-//storage "file" {
-//  path = "/vault/data"
-//}
-//EOF
-//      }
-//
-//      service = {
-//        enabled = true
-//      }
-//
-//      dataStorage = {
-//        enabled = true
-//        size = "5Gi"
-////        storageClass = null
-//        accessMode = "ReadWriteOnce"
-//      }
-//
-//    }
-//
-//    ui = {
-//      enabled = true
-////      serviceType = "ClusterIP"
-//    }
-//  }
-//}
-//
-//
-//resource "helm_release" "vault" {
-//  count = 1
-//  name  = "vault"
-//  chart = "vault"
-//  repository = "https://helm.releases.hashicorp.com"
-//  namespace = local.private_namespace
-//
-//  values = [
-//    yamlencode(local.vault_helm_values)
-//  ]
-//}
-//
-//resource "kubernetes_ingress" "vault_ui_ingress" {
-//  count = 1
-//
-//  metadata {
-//    namespace = local.private_namespace
-//    name = "vault-ui-ingress"
-//    annotations = {
-//      "nginx.ingress.kubernetes.io/rewrites-target" = "/"
-//      "nginx.ingress.kunernetes.io/ssl-redirect"    = "false"
-//      "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
-//    }
-//  }
-//  spec {
-//    tls {
-//      hosts = [
-//        "vault.${var.domain_name}",
-//      ]
-//      secret_name = "vault-${local.dashed_domain_name}"
-//    }
-//
-//    backend {
-//      service_name = "vault-ui-service"
-//      service_port = 8200
-//    }
-//
-//    rule {
-//      host = "vault.${var.domain_name}"
-//      http {
-//        path {
-//          path = "/"
-//          backend {
-//            service_name = "vault-ui-service"
-//            service_port = 8200
-//          }
-//        }
-//
-//      }
-//    }
-//
-//  }
-//}

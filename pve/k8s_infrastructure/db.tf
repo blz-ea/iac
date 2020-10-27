@@ -1,7 +1,7 @@
 locals {
   db_namespace = kubernetes_namespace.db.metadata.0.name
 }
-
+// TODO: Collect metrics
 resource "kubernetes_namespace" "db" {
   metadata {
     name = "db"
@@ -10,6 +10,55 @@ resource "kubernetes_namespace" "db" {
       "app.kubernetes.io/name" = "db"
     }
   }
+}
+
+#############################################################
+# Cert-manager - Certificate
+# Note: Wildcard certificate issued for database namespace
+# Ref: https://cert-manager.io/docs/concepts/certificate/
+#############################################################
+resource "helm_release" "cert_manager_wildcard_certificate_db" {
+  count = length(var.cloudflare_account_email) > 0 ? 1 : 0
+  namespace = local.db_namespace
+
+  chart = "${local.helm_charts_path}/cert-manager-resources/certificate"
+  name  = "cert-manager-wildcard-certificate-${local.db_namespace}"
+
+  set {
+    name = "name"
+    value = "letsencrypt-wildcard-${local.db_namespace}"
+  }
+
+  set {
+    name = "namespace"
+    value = local.db_namespace
+  }
+
+  set {
+    name = "secretName"
+    value = "letsencrypt-wildcard-secret-${local.db_namespace}"
+  }
+
+  set {
+    name = "dnsNames"
+    value = "{${join(",", [ "*.${var.cloudflare_zone_name}" ])}}"
+  }
+
+  set {
+    name = "issuerRef.name"
+    value = local.cert_manager_cluster_issuer_name
+  }
+
+  set {
+    name = "issuerRef.kind"
+    value = "ClusterIssuer"
+  }
+
+  depends_on = [
+    helm_release.cert_manager_cluster_issuer,
+    helm_release.cert_manager,
+  ]
+
 }
 
 ################################################################
@@ -100,7 +149,6 @@ locals {
 }
 
 resource "helm_release" "redis" {
-  // TODO: Collect metrics
   count = var.redis_enabled ? 1 : 0
   name  = "redis"
   chart = "stable/redis"
@@ -148,6 +196,22 @@ locals {
       }
     }
 
+    initdbScripts = {
+      "init.sql" = <<EOF
+CREATE ROLE keycloak WITH
+	PASSWORD '${var.postgresql_password}'
+    LOGIN
+	NOSUPERUSER
+	NOCREATEDB
+	NOCREATEROLE
+	INHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1;
+DROP DATABASE IF EXISTS keycloak;
+CREATE DATABASE keycloak WITH OWNER = keycloak ENCODING = 'UTF8' CONNECTION LIMIT = -1;
+EOF
+    }
+
     replication = {
       slaveReplicas = 0
     }
@@ -157,7 +221,6 @@ locals {
     }
 
     persistence = {
-//      storageClass = "fast-rbd"
       size = "20Gi"
     }
   }
@@ -166,7 +229,6 @@ locals {
 
 resource "helm_release" "postgresql" {
   count = var.postgresql_enabled ? 1 : 0
-  // TODO: Collect metrics
   // TODO: Add LDAP Authentication
   name        = "postgresql"
   repository  = "https://charts.bitnami.com/bitnami"
@@ -196,9 +258,9 @@ resource "kubernetes_ingress" "pgadmin_ingress" {
   spec {
     tls {
       hosts = [
-        "pgadmin.${var.domain_name}",
+        "*.${var.domain_name}",
       ]
-      secret_name = "pgadmin-${local.dashed_domain_name}"
+      secret_name = "letsencrypt-wildcard-secret-${local.db_namespace}"
     }
 
     backend {
@@ -343,6 +405,48 @@ resource "kubernetes_service" "pgadmin_service" {
 # ElasticSearch
 # Ref: https://www.docker.elastic.co/r/elasticsearch
 ################################################################
+resource "kubernetes_ingress" "elasticsearch_ingress" {
+  count = var.elasticsearch_enabled ? 1 : 0
+  metadata {
+    name = "elasticsearch-ingress"
+    namespace = local.db_namespace
+    annotations = {
+      "nginx.ingress.kubernetes.io/rewrites-target" = "/"
+      "nginx.ingress.kunernetes.io/ssl-redirect"    = "false"
+      "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
+    }
+  }
+  spec {
+    tls {
+      hosts = [
+        "*.${var.domain_name}",
+      ]
+      secret_name = "letsencrypt-wildcard-secret-${local.db_namespace}"
+    }
+
+    backend {
+      service_name = "elasticsearch-service"
+      service_port = 80
+    }
+
+    rule {
+      host = "elasticsearch.${var.domain_name}"
+      http {
+        path {
+          path = "/"
+          backend {
+            service_name = "elasticsearch-service"
+            service_port = 80
+          }
+        }
+
+      }
+    }
+
+  }
+
+}
+
 resource "kubernetes_stateful_set" "elasticsearch" {
   count = var.elasticsearch_enabled ? 1 : 0
   metadata {
@@ -488,10 +592,14 @@ resource "kubernetes_service" "elasticsearch_service" {
 
 }
 
-resource "kubernetes_ingress" "elasticsearch_ingress" {
+################################################################
+# ElasticSearch-UI
+# Ref: https://github.com/cars10/elasticvue
+################################################################
+resource "kubernetes_ingress" "elasticsearch_web_ui_ingress" {
   count = var.elasticsearch_enabled ? 1 : 0
   metadata {
-    name = "elasticsearch-ingress"
+    name      = "elasticsearch-ui-ingress"
     namespace = local.db_namespace
     annotations = {
       "nginx.ingress.kubernetes.io/rewrites-target" = "/"
@@ -502,23 +610,23 @@ resource "kubernetes_ingress" "elasticsearch_ingress" {
   spec {
     tls {
       hosts = [
-        "elasticsearch.${var.domain_name}",
+        "*.${var.domain_name}",
       ]
-      secret_name = "elasticsearch-${local.dashed_domain_name}"
+      secret_name = "letsencrypt-wildcard-secret-${local.db_namespace}"
     }
 
     backend {
-      service_name = "elasticsearch-service"
+      service_name = "elasticsearch-ui-service"
       service_port = 80
     }
 
     rule {
-      host = "elasticsearch.${var.domain_name}"
+      host = "elasticsearch-ui.${var.domain_name}"
       http {
         path {
           path = "/"
           backend {
-            service_name = "elasticsearch-service"
+            service_name = "elasticsearch-ui-service"
             service_port = 80
           }
         }
@@ -530,10 +638,6 @@ resource "kubernetes_ingress" "elasticsearch_ingress" {
 
 }
 
-################################################################
-# ElasticSearch-UI
-# Ref: https://github.com/cars10/elasticvue
-################################################################
 resource "kubernetes_deployment" "elasticsearch_web_ui" {
   count = var.elasticsearch_enabled ? 1 : 0
 
@@ -593,48 +697,6 @@ resource "kubernetes_service" "elasticsearch_web_ui_service" {
       target_port = 8080
       protocol    = "TCP"
       name        = "http"
-    }
-
-  }
-
-}
-
-resource "kubernetes_ingress" "elasticsearch_web_ui_ingress" {
-  count = var.elasticsearch_enabled ? 1 : 0
-  metadata {
-    name      = "elasticsearch-ui-ingress"
-    namespace = local.db_namespace
-    annotations = {
-      "nginx.ingress.kubernetes.io/rewrites-target" = "/"
-      "nginx.ingress.kunernetes.io/ssl-redirect"    = "false"
-      "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
-    }
-  }
-  spec {
-    tls {
-      hosts = [
-        "elasticsearch-ui.${var.domain_name}",
-      ]
-      secret_name = "elasticsearch-ui-${local.dashed_domain_name}"
-    }
-
-    backend {
-      service_name = "elasticsearch-ui-service"
-      service_port = 80
-    }
-
-    rule {
-      host = "elasticsearch-ui.${var.domain_name}"
-      http {
-        path {
-          path = "/"
-          backend {
-            service_name = "elasticsearch-ui-service"
-            service_port = 80
-          }
-        }
-
-      }
     }
 
   }
