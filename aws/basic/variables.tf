@@ -31,7 +31,19 @@ variable "route53_primary_zone_alternative_names" {
   default = []
 }
 
+#############################################################
+# User variables
+#############################################################
+variable "default_admin_username" {
+  description = "Admin username"
+  type = string
+  default = "deploy"
+}
 
+variable "default_admin_email" {
+  description = "Admin email"
+  type = string
+}
 #############################################################
 # SSH variables
 #############################################################
@@ -96,4 +108,12 @@ variable "ec2_instance_type" {
   description = "EC2 Instance type"
   type = string
   default = "t2.micro"
+}
+
+#############################################################
+# S3
+#############################################################
+variable "s3_data_bucket_name" {
+  description = "S3 Data Bucket name"
+  type = string
 }
