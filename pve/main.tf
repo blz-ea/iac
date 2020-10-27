@@ -91,7 +91,7 @@ module "proxmox_k8s_cluster" {
   vm_worker_proxmox_datastore_id = var.k8s_vm_worker_proxmox_datastore_id
 
   dependencies = [
-    module.packer-ubuntu-18-04-5-amd64.vm_id
+    module.packer-ubuntu-server-18-04-5-amd64.vm_id
   ]
   source = "./k8s_cluster"
 }
@@ -136,3 +136,40 @@ module "proxmox_k8s_infrastructure" {
 
   source = "./k8s_infrastructure"
 }
+
+//resource "proxmox_virtual_environment_cluster_alias" "test_alias" {
+//	name = "test1"
+//	cidr = "1.1.1.0/24"
+//	comment = "test_comment1"
+//}
+
+
+
+
+
+//resource "proxmox_virtual_environment_container" "ubuntu_container" {
+//  description = "Managed by Terraform"
+//
+//  node_name = "pve"
+//
+//  initialization {
+//    hostname = "go-compile"
+//
+//    ip_config {
+//      ipv4 {
+//        address = "192.168.89.203/23"
+//        gateway = "192.168.88.1"
+//      }
+//    }
+//
+//  }
+//
+//  network_interface {
+//    name = "veth0"
+//  }
+//
+//  operating_system {
+//    template_file_id = proxmox_virtual_environment_file.lxc-ubuntu-19-10-standard-19-10-1-amd64.id
+//    type             = "ubuntu"
+//  }
+//}
