@@ -181,3 +181,30 @@ resource "helm_release" "reloader" {
   repository = "https://stakater.github.io/stakater-charts"
   name = "reloader"
 }
+
+#############################################################
+# Kubed keep ConfigMaps and Secrets synchronized across namespaces and/or clusters.
+# Ref: https://github.com/appscode/kubed/tree/v0.12.0/charts/kubed
+#############################################################
+resource "helm_release" "kubed" {
+  chart = "kubed"
+  repository = "https://charts.appscode.com/stable/"
+  name = "kubed"
+  set {
+    name = "enableAnalytics"
+    value = false
+  }
+}
+
+resource "kubernetes_config_map" "wait_for_it_sh" {
+  metadata {
+    name = "wait-for-it"
+    annotations = {
+      "kubed.appscode.com/sync" = "true"
+    }
+  }
+
+  data = {
+    "wait-for-it.sh" = file(abspath("${local.bash_modules_path}/wait-for-it/wait-for-it.sh"))
+  }
+}
