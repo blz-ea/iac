@@ -322,6 +322,8 @@ for i in $${adLists_disabled[@]}; do
     sqlite3 /etc/pihole/gravity.db "INSERT INTO adlist (address,enabled) VALUES ('$i', 0)";
 done
 
+sleep 2
+
 # Update blacklists
 pihole -g
 
@@ -330,6 +332,12 @@ pihole restartdns
 
 # Restart
 service pihole-FTL restart
+
+# Redirect from / to /admin
+echo 'url.redirect = ("^/$" => "/admin" )' >> /etc/lighttpd/lighttpd.conf
+
+service lighttpd restart
+
 EOF
   }
 }
@@ -467,6 +475,7 @@ resource "kubernetes_config_map" "pihole_oauth_proxy_config" {
   }
 
   data = {
+    // TODO: Pre generate cookie secret and client_secret and both with Keycloak
     #############################################################
     # Reference: https://github.com/oauth2-proxy/oauth2-proxy/blob/master/docs/configuration/configuration.md
     #############################################################
@@ -483,9 +492,9 @@ email_domains = [
 client_id = "pomerium"
 client_secret = "7d22a0b0-180b-4d7d-bba3-74ba3f8d1c46"
 
-login_url = "https://keycloak.devset.app/auth/realms/lab/protocol/openid-connect/auth"
-redeem_url = "https://keycloak.devset.app/auth/realms/lab/protocol/openid-connect/token"
-validate_url = "https://keycloak.devset.app/auth/realms/lab/protocol/openid-connect/userinfo"
+login_url = "https://keycloak.${var.domain_name}/auth/realms/lab/protocol/openid-connect/auth"
+redeem_url = "https://keycloak.${var.domain_name}/auth/realms/lab/protocol/openid-connect/token"
+validate_url = "https://keycloak.${var.domain_name}/auth/realms/lab/protocol/openid-connect/userinfo"
 keycloak_group = "htpc"
 upstreams = [
   "http://pihole-service"
