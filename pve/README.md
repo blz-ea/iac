@@ -6,7 +6,7 @@
 |---------------|---------|
 | proxmox       | \>= 6.2 |
 | terraform     | \>= 0.13 |
-| packer        | = 1.6.0 |
+| packer        | \>= 1.6.5 |
 | ansible       | \>= 2.9.6 |
 | helm          | \>= 3.2.4 |
 | kubectl       | same as K8s cluster |
