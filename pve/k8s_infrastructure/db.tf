@@ -184,6 +184,29 @@ resource "kubernetes_service" "redis_lb_service" {
 
 }
 
+resource "kubernetes_service" "redis_service" {
+  count = var.redis_enabled ? 1 : 0
+  metadata {
+    name = "redis"
+    namespace = local.db_namespace
+  }
+
+  spec {
+    selector = {
+      "app" = "redis"
+    }
+
+    port {
+      port        = 6379
+      target_port = 6379
+      protocol    = "TCP"
+      name        = "redis"
+    }
+
+  }
+
+}
+
 ################################################################
 # PostgreSQL
 # Ref: https://hub.helm.sh/charts/bitnami/postgresql-ha
@@ -196,10 +219,11 @@ locals {
       }
     }
 
+    // TODO: Separate init scripts and move to appropriate component use migration tool (e.g. Flyway) to perform DB changes
     initdbScripts = {
       "init.sql" = <<EOF
-CREATE ROLE keycloak WITH
-	PASSWORD '${var.postgresql_password}'
+CREATE ROLE ${var.keycloak_db_username} WITH
+	PASSWORD '${var.keycloak_db_password}'
     LOGIN
 	NOSUPERUSER
 	NOCREATEDB
@@ -207,8 +231,21 @@ CREATE ROLE keycloak WITH
 	INHERIT
 	NOREPLICATION
 	CONNECTION LIMIT -1;
-DROP DATABASE IF EXISTS keycloak;
-CREATE DATABASE keycloak WITH OWNER = keycloak ENCODING = 'UTF8' CONNECTION LIMIT = -1;
+DROP DATABASE IF EXISTS ${var.keycloak_db_name};
+CREATE DATABASE ${var.keycloak_db_name} WITH OWNER = ${var.keycloak_db_username} ENCODING = 'UTF8' CONNECTION LIMIT = -1;
+
+CREATE ROLE ${var.nextcloud_db_username} WITH
+	PASSWORD '${var.nextcloud_db_password}'
+    LOGIN
+	NOSUPERUSER
+	NOCREATEDB
+	NOCREATEROLE
+	INHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1;
+
+DROP DATABASE IF EXISTS ${var.nextcloud_db_name};
+CREATE DATABASE ${var.nextcloud_db_name} WITH OWNER = ${var.nextcloud_db_username} ENCODING = 'UTF8' CONNECTION LIMIT = -1;
 EOF
     }
 

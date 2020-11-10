@@ -1,5 +1,6 @@
 locals {
   helm_charts_path        = pathexpand("${path.module}/../../modules/helm")
+  bash_modules_path       = pathexpand("${path.module}/../../modules/bash")
   dashed_domain_name      = replace(var.domain_name, ".", "-")
   metallb_namespace       = kubernetes_namespace.metallb_system.metadata.0.name
   cert_manager_namespace  = kubernetes_namespace.cert_manager.metadata.0.name

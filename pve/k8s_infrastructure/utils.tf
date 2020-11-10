@@ -575,3 +575,202 @@ resource "kubernetes_deployment" "pihole_oauth_proxy" {
   ]
 
 }
+
+#############################################################
+# Nextcloud
+# Ref:
+# - https://hub.docker.com/_/nextcloud
+#############################################################
+resource "kubernetes_ingress" "nextcloud_ingress" {
+  count = 1
+  metadata {
+    name = "nextcloud-ingress"
+    namespace = local.utils_namespace
+    annotations = {
+      "cert-manager.io/cluster-issuer"                = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/rewrites-target"   = "/"
+      "nginx.ingress.kunernetes.io/ssl-redirect"      = "true"
+    }
+  }
+
+  spec {
+    tls {
+      hosts = [
+        "*.${var.domain_name}",
+      ]
+      secret_name = "letsencrypt-wildcard-secret-${local.utils_namespace}"
+    }
+
+    rule {
+      host = "nextcloud.${var.domain_name}"
+      http {
+        path {
+          path = "/"
+          backend {
+            service_name = "nextcloud-service"
+            service_port = 80
+          }
+        }
+      }
+    }
+
+  }
+}
+
+resource "kubernetes_service" "nextcloud_service" {
+  count = 1
+  metadata {
+    namespace = local.utils_namespace
+    name = "nextcloud-service"
+  }
+  spec {
+    type = "ClusterIP"
+
+    selector = {
+      "app.kubernetes.io/name" = "nextcloud"
+    }
+
+    port {
+      name        = "nextcloud-http"
+      port        = 80
+      target_port = 80
+    }
+
+  }
+}
+
+// TODO: Add LDAP support
+// TODO: Wait for Redis and PostgreSQL
+resource "kubernetes_stateful_set" "nextcloud" {
+  count = var.nextcloud_enable ? 1 : 0
+
+  metadata {
+    namespace = local.utils_namespace
+    name      = "nextcloud"
+    labels = {
+      "app.kubernetes.io/name" = "nextcloud"
+    }
+  }
+
+  spec {
+    service_name  = "nextcloud"
+    replicas      = 1
+
+    selector {
+      match_labels = {
+        "app.kubernetes.io/name" = "nextcloud"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          "app.kubernetes.io/name" = "nextcloud"
+        }
+      }
+
+      spec {
+        container {
+          name = "nextcloud"
+          image = "nextcloud"
+
+          env {
+            name = "NEXTCLOUD_ADMIN_USER"
+            value = var.nextcloud_admin_username
+          }
+
+          env {
+            name = "NEXTCLOUD_ADMIN_PASSWORD"
+            value = var.nextcloud_admin_password
+          }
+
+          env {
+            name = "NEXTCLOUD_TRUSTED_DOMAINS"
+            value = "nextcloud.${var.domain_name}"
+          }
+
+          env {
+            name = "POSTGRES_DB"
+            value = var.nextcloud_db_name
+          }
+
+          env {
+            name = "POSTGRES_USER"
+            value = var.nextcloud_db_username
+          }
+
+          env {
+            name = "POSTGRES_PASSWORD"
+            value = var.nextcloud_db_password
+          }
+
+          env {
+            name = "POSTGRES_HOST"
+            value = "postgresql.db.svc.cluster.local"
+          }
+
+          env {
+            name = "REDIS_HOST"
+            value = "redis.db.svc.cluster.local"
+          }
+
+          env {
+            name = "REDIS_HOST_PASSWORD"
+            value = var.redis_password
+          }
+
+          env {
+            name = "OVERWRITEPROTOCOL"
+            value = "https"
+          }
+// TODO: When SMTP server will be ready. Set below variables
+//SMTP_HOST (not set by default) hostname of the SMTP server
+//SMTP_SECURE (empty by default) set to 'ssl' to use SSL on the connection.
+//SMTP_PORT (default: 465 for SSL and 25 for non-secure connection) Optional port for SMTP connection.
+//SMTP_AUTHTYPE (default: LOGIN) The method used for authentication.
+//SMTP_NAME (empty by default) Username for the authentication.
+//SMTP_PASSWORD (empty by default) Password for the authentication.
+//MAIL_FROM_ADDRESS (not set by default) Use this address for the 'from' field in the mail envelopes sent by Nextcloud.
+//MAIL_DOMAIN (not set by default) Set a different domain for the emails than the domain where Nextcloud is installed.
+
+          volume_mount {
+            name = "nextcloud-data-volume"
+            mount_path = "/var/www/html"
+          }
+
+          port {
+            container_port = 80
+          }
+        }
+
+        volume {
+          name = "nextcloud-data-volume"
+          persistent_volume_claim {
+            claim_name = "nextcloud-data-volume"
+          }
+        }
+      }
+    }
+
+    update_strategy {
+      type = "RollingUpdate"
+    }
+
+    volume_claim_template {
+      metadata {
+        name = "nextcloud-data-volume"
+      }
+      spec {
+        access_modes = [
+          "ReadWriteOnce"
+        ]
+        resources {
+          requests = {
+            storage = "5Gi"
+          }
+        }
+      }
+    }
+
+  }
+}

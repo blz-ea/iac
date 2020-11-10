@@ -244,3 +244,39 @@ variable "ceph_user_id" {
   description = "Ceph User ID"
   default = "kube"
 }
+
+variable "nextcloud_enable" {
+  type = bool
+  description = "Enable Nextcloud"
+  default = true
+}
+
+variable "nextcloud_db_name" {
+  type = string
+  description = "Database name that will be used by Nextcloud"
+  default = "nextcloud"
+}
+
+variable "nextcloud_db_username" {
+  type = string
+  description = "Username that will be used to access Nextcloud database"
+  default = "nextcloud"
+}
+
+variable "nextcloud_db_password" {
+  type = string
+  description = "Password that will be used to access Nextcloud database"
+  default = "YiaK7$RNJY4E8$J"
+}
+
+variable "nextcloud_admin_username" {
+  type = string
+  description = "Nextcloud user that will be created during initializtion"
+  default = "deploy"
+}
+
+variable "nextcloud_admin_password" {
+  type = string
+  description = "Nextcloud user that will be created during initializtion"
+  default = "utwighoghghisodhighhu"
+}
