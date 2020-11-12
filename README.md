@@ -12,7 +12,7 @@ A boilerplate to create a full Infrastructure as Code for various cloud environm
 |---------------|---------|
 | nix OS or WSL |  |
 | terraform     | \>= 0.13 |
-| packer        | = 1.6.0 |
+| packer        | \>= 1.6.5 |
 | ansible       | \>= 2.9.6 |
 
 ## Folder Structure ##
